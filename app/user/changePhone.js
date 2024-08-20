@@ -3,9 +3,12 @@ import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, ActivityInd
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
 import { updateUser } from "../(services)/api/api";
+import { logoutAction } from "../(redux)/authSlice";
+import ProtectedRoute from "../components/ProtectedRoute";
+
 
 const ChangePhoneSchema = Yup.object().shape({
   currentPhoneNumber: Yup.string().required("Required"),
@@ -13,18 +16,31 @@ const ChangePhoneSchema = Yup.object().shape({
 });
 
 export default function ChangePhone() {
+  const dispatch = useDispatch();
   const router = useRouter();
   const user = useSelector((state) => state.auth.user) || {};
   const token = useSelector((state) => state.auth.token);
+  const handleLogout = () => {
+    dispatch(logoutAction());
+    router.push("/auth/login");
+  };
 
-  // Mutation function updated to handle `newPhoneNumber`
   const mutation = useMutation({
     mutationFn: (values) => {
       const { newPhoneNumber } = values;
       return updateUser(user.userId, { phoneNumber: newPhoneNumber }, token);
     },
     onSuccess: () => {
-      router.push("/(tabs)");
+      Alert.alert(
+        "Phone Number Updated",
+        "Your phone number has been updated. Please log out and log back in to see the changes.",
+        [
+          {
+            text: "OK",
+            onPress: handleLogout
+          },
+        ]
+      );
     },
     onError: (error) => {
       Alert.alert("Error", "Failed to update phone number.");
@@ -32,8 +48,10 @@ export default function ChangePhone() {
   });
 
   return (
+    <ProtectedRoute>
     <View style={styles.container}>
       <Text style={styles.title}>Change Phone Number</Text>
+      <Text style={styles.currentPhoneText}>Current Phone: {user.phoneNumber}</Text>
       {mutation.isError && (
         <Text style={styles.errorText}>
           {mutation.error?.response?.data?.message || "An error occurred."}
@@ -51,14 +69,6 @@ export default function ChangePhone() {
       >
         {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Current Phone Number"
-              onChangeText={handleChange("currentPhoneNumber")}
-              onBlur={handleBlur("currentPhoneNumber")}
-              value={values.currentPhoneNumber}
-              keyboardType="phone-pad"
-            />
             {errors.currentPhoneNumber && touched.currentPhoneNumber && (
               <Text style={styles.errorText}>{errors.currentPhoneNumber}</Text>
             )}
@@ -88,6 +98,7 @@ export default function ChangePhone() {
         )}
       </Formik>
     </View>
+    </ProtectedRoute>
   );
 }
 
@@ -132,5 +143,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  currentPhoneText: {
+    fontSize: 16,
+    marginBottom: 16,
+    color: "#333",
   },
 });

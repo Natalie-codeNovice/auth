@@ -9,11 +9,11 @@ import { updateUser } from "../(services)/api/api";
 import { logoutAction } from "../(redux)/authSlice";
 import ProtectedRoute from "../components/ProtectedRoute";
 
-const ChangeEmailSchema = Yup.object().shape({
-  newEmail: Yup.string().email("Invalid email").required("Required"),
+const ChangeUsernameSchema = Yup.object().shape({
+  newUsername: Yup.string().required("Required"),
 });
 
-export default function ChangeEmail() {
+export default function ChangeUsername() {
   const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user) || {};
@@ -25,11 +25,11 @@ export default function ChangeEmail() {
   };
 
   const mutation = useMutation({
-    mutationFn: (newEmail) => updateUser(user.userId, { email: newEmail }, token),
+    mutationFn: (newUsername) => updateUser(user.userId, { username: newUsername }, token),
     onSuccess: () => {
       Alert.alert(
-        "Email Updated",
-        "Your email address has been updated. Please log out and log back in to see the changes.",
+        "Username Updated",
+        "Your username has been updated. Please log out and log back in to see the changes.",
         [
           {
             text: "OK",
@@ -39,18 +39,17 @@ export default function ChangeEmail() {
       );
     },
     onError: (error) => {
-      Alert.alert("Error", "Failed to update email.");
+      console.log(error)
     },
   });
 
   return (
     <ProtectedRoute>
       <View style={styles.container}>
-        <Text style={styles.title}>Change Email</Text>
+        <Text style={styles.title}>Change Username</Text>
         
-        {/* Display the current email */}
-        <Text style={styles.currentEmailText}>Current Email: {user.email}</Text>
-        
+        {/* Display the current username */}
+        <Text style={styles.currentUsernameText}>Current Username: {user.username}</Text>
         {mutation.isError && (
           <Text style={styles.errorText}>
             {mutation.error?.response?.data?.message || "An error occurred."}
@@ -59,25 +58,24 @@ export default function ChangeEmail() {
         
         <Formik
           initialValues={{
-            newEmail: "",
+            newUsername: "",
           }}
-          validationSchema={ChangeEmailSchema}
+          validationSchema={ChangeUsernameSchema}
           onSubmit={(values) => {
-            mutation.mutate(values.newEmail);
+            mutation.mutate(values.newUsername);
           }}
         >
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <View style={styles.form}>
               <TextInput
                 style={styles.input}
-                placeholder="New Email"
-                onChangeText={handleChange("newEmail")}
-                onBlur={handleBlur("newEmail")}
-                value={values.newEmail}
-                keyboardType="email-address"
+                placeholder="New Username"
+                onChangeText={handleChange("newUsername")}
+                onBlur={handleBlur("newUsername")}
+                value={values.newUsername}
               />
-              {errors.newEmail && touched.newEmail && (
-                <Text style={styles.errorText}>{errors.newEmail}</Text>
+              {errors.newUsername && touched.newUsername && (
+                <Text style={styles.errorText}>{errors.newUsername}</Text>
               )}
               <TouchableOpacity
                 style={styles.button}
@@ -111,7 +109,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 24,
   },
-  currentEmailText: {
+  currentUsernameText: {
     fontSize: 16,
     marginBottom: 16,
     color: "#333",

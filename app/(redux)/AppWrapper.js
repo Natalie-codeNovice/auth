@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 
 import { Stack } from "expo-router/stack";
 import { loadUser } from "./authSlice";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 function AppWrapper() {
   const dispatch = useDispatch();
@@ -19,11 +20,10 @@ function AppWrapper() {
       <Stack.Screen name="auth/login" options={{ title: "Login", headerShown: false }} />
       <Stack.Screen name="auth/register" options={{ title: "Register", headerShown: false }} />      
       <Stack.Screen name="user/editProfile" options={{ title: "Edit profile", headerShown: true }} />      
-      <Stack.Screen name="user/accountSettings" options={{ title: "Account", headerShown: true }} />      
-      <Stack.Screen name="user/changeEmail" options={{ title: "Change Email", headerShown: true }} />      
-      <Stack.Screen name="user/changePassword" options={{ title: "Change Password", headerShown: true }} />      
+      <Stack.Screen name="user/changeEmail" options={{ title: "Change Email", headerShown: true }} />    
+      <Stack.Screen name="user/changePassword" options={{ title: "Change Password", headerShown: true }} />  
       <Stack.Screen name="user/changePhone" options={{ title: "Change Number", headerShown: true }} />  
-
+      <Stack.Screen name="user/changeUsername" options={{ title: "Change Username", headerShown: true }} />  
       {/* report  */}
       <Stack.Screen name="report/index" options={{ title: "Back", headerShown: true }} />  
       <Stack.Screen name="history/index" options={{ title: "Back", headerShown: true }} />  

@@ -3,31 +3,55 @@ import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, ActivityInd
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
-import { updateUser } from "../(services)/api/api";
+import { updatePassword } from "../(services)/api/api";
+import { logoutAction } from "../(redux)/authSlice";
+import ProtectedRoute from "../components/ProtectedRoute";
+
 
 const ChangePasswordSchema = Yup.object().shape({
   currentPassword: Yup.string().required("Required"),
   newPassword: Yup.string().min(6, "Password must be at least 6 characters").required("Required"),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('newPassword'), null], 'Passwords must match')
+    .required('Required'),
 });
 
 export default function ChangePassword() {
+  const dispatch = useDispatch();
   const router = useRouter();
   const user = useSelector((state) => state.auth.user) || {};
   const token = useSelector((state) => state.auth.token);
+  const handleLogout = () => {
+    dispatch(logoutAction());
+    router.push("/auth/login");
+  };
 
   const mutation = useMutation({
-    mutationFn: (values) => updateUser(user.userId, values, token),
+    mutationFn: (values) => {
+      const { currentPassword, newPassword } = values;
+      return updatePassword(user.userId, currentPassword, newPassword , token);
+    },
     onSuccess: () => {
-      router.push("/(tabs)");
+      Alert.alert(
+        "Password Updated",
+        "Your password has been updated successfully. Please log out and log back in to see the changes.",
+        [
+          {
+            text: "OK",
+            onPress: handleLogout
+          },
+        ]
+      );
     },
     onError: (error) => {
-      Alert.alert("Error", "Failed to update password.");
+      console.log(error);
     },
   });
 
   return (
+    <ProtectedRoute>
     <View style={styles.container}>
       <Text style={styles.title}>Change Password</Text>
       {mutation.isError && (
@@ -39,6 +63,7 @@ export default function ChangePassword() {
         initialValues={{
           currentPassword: "",
           newPassword: "",
+          confirmPassword: "",
         }}
         validationSchema={ChangePasswordSchema}
         onSubmit={(values) => {
@@ -69,6 +94,17 @@ export default function ChangePassword() {
             {errors.newPassword && touched.newPassword && (
               <Text style={styles.errorText}>{errors.newPassword}</Text>
             )}
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm New Password"
+              onChangeText={handleChange("confirmPassword")}
+              onBlur={handleBlur("confirmPassword")}
+              value={values.confirmPassword}
+              secureTextEntry
+            />
+            {errors.confirmPassword && touched.confirmPassword && (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            )}
             <TouchableOpacity
               style={styles.button}
               onPress={handleSubmit}
@@ -84,6 +120,7 @@ export default function ChangePassword() {
         )}
       </Formik>
     </View>
+    </ProtectedRoute>
   );
 }
 

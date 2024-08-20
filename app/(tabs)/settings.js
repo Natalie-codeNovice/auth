@@ -15,6 +15,9 @@ const Settings = () => {
   const handleEmailChange = () => {
     router.push("/user/changeEmail");
   };
+  const handleUsernameChange = () => {
+    router.push("/user/changeUsername");
+  };
 
   const handleChangeNumber = () => {
     router.push("/user/changePhone");
@@ -66,12 +69,20 @@ const Settings = () => {
       <View style={styles.section}>
         <TouchableOpacity
           style={styles.option}
+          onPress={handleUsernameChange}
+        >
+          <Icon name="user" size={24} color="#4caf50" />
+          <Text style={styles.optionText}>Change username</Text>
+          <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.option}
           onPress={handleEmailChange}
         >
           <Icon name="envelope" size={24} color="#4caf50" />
           <Text style={styles.optionText}>Email Address</Text>
           <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />
-        </TouchableOpacity>
+        </TouchableOpacity>        
         <TouchableOpacity
           style={styles.option}
           onPress={handleChangeNumber}

@@ -46,23 +46,10 @@ const authSlice = createSlice({
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
-    updateEmail: (state, action) => {
+    updateUser: (state, action) => {
       if (state.user) {
-        state.user.email = action.payload;
-        AsyncStorage.setItem("userInfo", JSON.stringify(state.user));
-      }
-    },
-    updatePhoneNumber: (state, action) => {
-      if (state.user) {
-        state.user.phoneNumber = action.payload;
-        AsyncStorage.setItem("userInfo", JSON.stringify(state.user));
-      }
-    },
-    updatePassword: (state, action) => {
-      // Typically, you would handle password updates securely on the backend
-      // This is a placeholder example
-      if (state.user) {
-        state.user.password = action.payload;
+        // Update the user state with the provided payload
+        state.user = { ...state.user, ...action.payload };
         AsyncStorage.setItem("userInfo", JSON.stringify(state.user));
       }
     },
@@ -74,9 +61,7 @@ export const {
   logoutAction,
   setUser,
   setLoading,
-  updateEmail,
-  updatePhoneNumber,
-  updatePassword
+  updateUser,
 } = authSlice.actions;
 
 export default authSlice.reducer;

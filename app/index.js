@@ -10,7 +10,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Video
+      {/* <Video
         ref={video}
         style={styles.video}
         source={{
@@ -20,11 +20,11 @@ export default function App() {
         shouldPlay
         isLooping
         onPlaybackStatusUpdate={(status) => setStatus(() => status)}
-      />
+      /> */}
       <View style={styles.overlay}>
-        <Text style={styles.mainText}>Welcome</Text>
-        <Text style={styles.subText}>Finance tracker</Text>
-        <Text style={styles.tagline}>Build Apps, Build Futures</Text>
+        <Text style={styles.mainText}>Budget is telling</Text>
+        <Text style={styles.subText}>Your money where to go</Text>
+        <Text style={styles.tagline}>Instead of wonder where it went</Text>
       </View>
       <View style={styles.buttons}>
         <TouchableOpacity
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center", // Center items horizontally
   },
   video: {
     ...StyleSheet.absoluteFillObject,
@@ -56,46 +57,52 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Slightly darker overlay for better text contrast
+    padding: 20, // Add padding to prevent text from touching the edges
   },
   mainText: {
     color: "white",
-    fontSize: 68,
+    fontSize: 50, // Adjusted for better readability
     fontWeight: "bold",
     textAlign: "center",
+    marginBottom: 10, // Add spacing below main text
   },
   subText: {
     color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 22, // Adjusted size for better hierarchy
+    fontWeight: "600",
     textAlign: "center",
+    marginBottom: 10, // Add spacing below sub text
   },
   tagline: {
     color: "white",
-    fontSize: 18,
+    fontSize: 16, // Smaller size for less emphasis
     fontStyle: "italic",
     textAlign: "center",
-    marginTop: 10,
+    marginTop: 10, // Add margin at the top for separation
+    paddingHorizontal: 20, // Add horizontal padding for better text fit
   },
   buttons: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
     position: "absolute",
-    bottom: 30,
-    left: 0,
-    right: 0,
+    bottom: 20, // Adjusted bottom position for better placement
+    left: 20, // Adjusted left and right for better spacing
+    right: 20,
   },
   button: {
     backgroundColor: "#6200ea",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 25,
-    elevation: 3, // Adds a shadow effect on Android
+    elevation: 3, // Shadow effect for Android
+    width: 120, // Fixed width for consistency
+    alignItems: "center", // Center text horizontally
   },
   buttonText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 16, // Slightly smaller font size for buttons
     fontWeight: "bold",
   },
 });
