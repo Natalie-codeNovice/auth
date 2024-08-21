@@ -1,12 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
-import { updateUser } from "../(services)/api/api";
-import { logoutAction } from "../(redux)/authSlice";
+import { getUser, updateUser } from "../(services)/api/api";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 const ChangeUsernameSchema = Yup.object().shape({
@@ -15,21 +14,39 @@ const ChangeUsernameSchema = Yup.object().shape({
 
 export default function ChangeUsername() {
   const router = useRouter();
-  const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.user) || {};
   const token = useSelector((state) => state.auth.token);
+  const userId = useSelector((state) => state.auth.user?.userId);
+  const [currentUsername, setCurrentUsername] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUser(userId, token);
+        setCurrentUsername(userData.username);
+      } catch (err) {
+        setError("Failed to load current username");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId && token) {
+      fetchUserData();
+    }
+  }, [userId, token]);
 
   const handleLogout = () => {
-    dispatch(logoutAction());
-    router.push("/auth/login");
+    router.push("/(tabs)/profile");
   };
 
   const mutation = useMutation({
-    mutationFn: (newUsername) => updateUser(user.userId, { username: newUsername }, token),
+    mutationFn: (newUsername) => updateUser(userId, { username: newUsername }, token),
     onSuccess: () => {
       Alert.alert(
         "Username Updated",
-        "Your username has been updated. Please log out and log back in to see the changes.",
+        "Your username has been updated.",
         [
           {
             text: "OK",
@@ -39,9 +56,28 @@ export default function ChangeUsername() {
       );
     },
     onError: (error) => {
-      console.log(error)
+      Alert.alert(
+        "Error",
+        error?.response?.data?.message || "An error occurred while updating the username."
+      );
     },
   });
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -49,12 +85,7 @@ export default function ChangeUsername() {
         <Text style={styles.title}>Change Username</Text>
         
         {/* Display the current username */}
-        <Text style={styles.currentUsernameText}>Current Username: {user.username}</Text>
-        {mutation.isError && (
-          <Text style={styles.errorText}>
-            {mutation.error?.response?.data?.message || "An error occurred."}
-          </Text>
-        )}
+        <Text style={styles.currentUsernameText}>Current Username: {currentUsername}</Text>
         
         <Formik
           initialValues={{

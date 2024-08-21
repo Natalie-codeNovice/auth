@@ -1,103 +1,132 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
-import { updateUser } from "../(services)/api/api";
-import { logoutAction } from "../(redux)/authSlice";
+import { getUser, updateUser } from "../(services)/api/api";
 import ProtectedRoute from "../components/ProtectedRoute";
 
-
 const ChangePhoneSchema = Yup.object().shape({
-  currentPhoneNumber: Yup.string().required("Required"),
   newPhoneNumber: Yup.string().required("Required"),
 });
 
 export default function ChangePhone() {
-  const dispatch = useDispatch();
   const router = useRouter();
-  const user = useSelector((state) => state.auth.user) || {};
   const token = useSelector((state) => state.auth.token);
+  const userId = useSelector((state) => state.auth.user?.userId);
+  const [currentPhoneNumber, setCurrentPhoneNumber] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUser(userId, token);
+        setCurrentPhoneNumber(userData.phoneNumber);
+      } catch (err) {
+        setError("Failed to load current phone");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId && token) {
+      fetchUserData();
+    }
+  }, [userId, token]);
+
   const handleLogout = () => {
-    dispatch(logoutAction());
-    router.push("/auth/login");
+    router.push("/(tabs)/profile");
   };
 
   const mutation = useMutation({
-    mutationFn: (values) => {
-      const { newPhoneNumber } = values;
-      return updateUser(user.userId, { phoneNumber: newPhoneNumber }, token);
-    },
+    mutationFn: (newPhoneNumber) => updateUser(userId, { phoneNumber: newPhoneNumber }, token),
     onSuccess: () => {
       Alert.alert(
-        "Phone Number Updated",
-        "Your phone number has been updated. Please log out and log back in to see the changes.",
+        "Phone number Updated",
+        "Your phone number has been updated.",
         [
           {
             text: "OK",
-            onPress: handleLogout
+            onPress: handleLogout,
           },
         ]
       );
     },
     onError: (error) => {
-      Alert.alert("Error", "Failed to update phone number.");
+      console.log("Error details:", error.response ? error.response.data : error.message);
+      Alert.alert("Error", error?.response?.data?.message || "Failed to update phone number.");
     },
   });
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <ProtectedRoute>
-    <View style={styles.container}>
-      <Text style={styles.title}>Change Phone Number</Text>
-      <Text style={styles.currentPhoneText}>Current Phone: {user.phoneNumber}</Text>
-      {mutation.isError && (
-        <Text style={styles.errorText}>
-          {mutation.error?.response?.data?.message || "An error occurred."}
-        </Text>
-      )}
-      <Formik
-        initialValues={{
-          currentPhoneNumber: user.phoneNumber || "",
-          newPhoneNumber: "",
-        }}
-        validationSchema={ChangePhoneSchema}
-        onSubmit={(values) => {
-          mutation.mutate(values);
-        }}
-      >
-        {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
-          <View style={styles.form}>
-            {errors.currentPhoneNumber && touched.currentPhoneNumber && (
-              <Text style={styles.errorText}>{errors.currentPhoneNumber}</Text>
-            )}
-            <TextInput
-              style={styles.input}
-              placeholder="New Phone Number"
-              onChangeText={handleChange("newPhoneNumber")}
-              onBlur={handleBlur("newPhoneNumber")}
-              value={values.newPhoneNumber}
-              keyboardType="phone-pad"
-            />
-            {errors.newPhoneNumber && touched.newPhoneNumber && (
-              <Text style={styles.errorText}>{errors.newPhoneNumber}</Text>
-            )}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSubmit}
-              disabled={mutation.isLoading}
-            >
-              {mutation.isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Update</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>Change Phone Number</Text>
+        <Text style={styles.currentPhoneText}>Current Phone: {currentPhoneNumber}</Text>
+        {mutation.isError && (
+          <Text style={styles.errorText}>
+            {mutation.error?.response?.data?.message || "An error occurred."}
+          </Text>
         )}
-      </Formik>
-    </View>
+        <Formik
+          initialValues={{
+            newPhoneNumber: "",
+          }}
+          validationSchema={ChangePhoneSchema}
+          onSubmit={(values) => {
+            mutation.mutate(values.newPhoneNumber);
+          }}
+        >
+          {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+            <View style={styles.form}>
+              {errors.newPhoneNumber && touched.newPhoneNumber && (
+                <Text style={styles.errorText}>{errors.newPhoneNumber}</Text>
+              )}
+              <TextInput
+                style={styles.input}
+                placeholder="New Phone Number"
+                onChangeText={handleChange("newPhoneNumber")}
+                onBlur={handleBlur("newPhoneNumber")}
+                value={values.newPhoneNumber}
+                keyboardType="phone-pad"
+              />
+              {errors.newPhoneNumber && touched.newPhoneNumber && (
+                <Text style={styles.errorText}>{errors.newPhoneNumber}</Text>
+              )}
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleSubmit}
+                disabled={mutation.isLoading}
+              >
+                {mutation.isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Update</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </Formik>
+      </View>
     </ProtectedRoute>
   );
 }

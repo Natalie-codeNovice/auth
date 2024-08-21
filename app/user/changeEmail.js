@@ -1,12 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
-import { updateUser } from "../(services)/api/api";
-import { logoutAction } from "../(redux)/authSlice";
+import { getUser, updateUser } from "../(services)/api/api";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 const ChangeEmailSchema = Yup.object().shape({
@@ -15,21 +14,39 @@ const ChangeEmailSchema = Yup.object().shape({
 
 export default function ChangeEmail() {
   const router = useRouter();
-  const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.user) || {};
   const token = useSelector((state) => state.auth.token);
+  const userId = useSelector((state) => state.auth.user?.userId);
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUser(userId, token);
+        setCurrentEmail(userData.email);
+      } catch (err) {
+        setError("Failed to load current email");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId && token) {
+      fetchUserData();
+    }
+  }, [userId, token]);
 
   const handleLogout = () => {
-    dispatch(logoutAction());
-    router.push("/auth/login");
+    router.push("/(tabs)/profile");
   };
 
   const mutation = useMutation({
-    mutationFn: (newEmail) => updateUser(user.userId, { email: newEmail }, token),
+    mutationFn: (newEmail) => updateUser(userId, { email: newEmail }, token),
     onSuccess: () => {
       Alert.alert(
         "Email Updated",
-        "Your email address has been updated. Please log out and log back in to see the changes.",
+        "Your email address has been updated.",
         [
           {
             text: "OK",
@@ -39,9 +56,25 @@ export default function ChangeEmail() {
       );
     },
     onError: (error) => {
-      Alert.alert("Error", "Failed to update email.");
+      console.log(error);
     },
   });
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -49,7 +82,7 @@ export default function ChangeEmail() {
         <Text style={styles.title}>Change Email</Text>
         
         {/* Display the current email */}
-        <Text style={styles.currentEmailText}>Current Email: {user.email}</Text>
+        <Text style={styles.currentEmailText}>Current Email: {currentEmail}</Text>
         
         {mutation.isError && (
           <Text style={styles.errorText}>

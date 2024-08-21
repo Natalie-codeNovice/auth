@@ -1,26 +1,78 @@
-import React from "react";
-import { View, StyleSheet, Text,Image, FlatList } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, Text, Image, FlatList, ActivityIndicator } from "react-native";
 import { useSelector } from "react-redux";
-import { useRouter } from "expo-router";
-
+import { getUser } from "../(services)/api/api";
+import { getNetBalance, getRecentTransactions } from "../(services)/api/transactionsApi";
+import { FontAwesome } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function Profile() {
-  const router = useRouter();
-  const user = useSelector((state) => state.auth.user);
-  const netBalance = useSelector((state) => state.auth.netBalance); // Assuming netBalance is in the auth slice
+  const userId = useSelector((state) => state.auth.user.userId);
+  const token = useSelector((state) => state.auth.token);
 
+  const [user, setUser] = useState(null);
+  const [netBalance, setNetBalance] = useState({});
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample data for recent transactions and goals (Replace with actual data)
-  const recentTransactions = [
-    { id: '1', description: 'Salary', amount: '$1200' },
-    { id: '2', description: 'Groceries', amount: '-$150' },
-    { id: '3', description: 'Utilities', amount: '-$100' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        if (userId && token) {
+          const userData = await getUser(userId, token);
+          setUser(userData);
 
-  const financialGoals = [
-    { id: '1', goal: 'Vacation Fund', amount: '$5000', progress: '40%' },
-    { id: '2', goal: 'Emergency Fund', amount: '$2000', progress: '70%' },
-  ];
+          const netBalanceData = await getNetBalance(userId, token);
+          setNetBalance(netBalanceData);
+
+          const transactionsData = await getRecentTransactions(userId, token);
+          setRecentTransactions(transactionsData);
+        }
+      } catch (err) {
+        setError("Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId, token]);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  const renderProfileHeader = () => (
+    <LinearGradient colors={['#347deb', '#c334eb']} style={styles.gradientBackground}>
+      <View style={styles.profileContainer}>
+        <Image
+          source={{ uri: user?.profilePicture || 'https://via.placeholder.com/150' }} // Placeholder image
+          style={styles.profileImage}
+        />
+        <Text style={styles.username}>{user?.username}</Text>
+        <Text style={styles.email}>{user?.email}</Text>
+        <Text style={styles.phoneNumber}>{user?.phoneNumber}</Text>
+        <View style={styles.balanceContainer}>
+          <FontAwesome name="money" size={24} color="#fff" />
+          <Text style={styles.balance}>${netBalance.balance || '0.00'}</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
 
   const renderTransaction = ({ item }) => (
     <View style={styles.transaction}>
@@ -29,76 +81,82 @@ export default function Profile() {
     </View>
   );
 
-  const renderGoal = ({ item }) => (
-    <View style={styles.goal}>
-      <Text style={styles.goalDescription}>{item.goal}</Text>
-      <Text style={styles.goalAmount}>{item.amount}</Text>
-      <Text style={styles.goalProgress}>Progress: {item.progress}</Text>
+  const renderTransactionTitle = () => (
+    <View style={styles.transactionsTitleContainer}>
+      <Text style={styles.transactionsTitle}>Recent Transactions</Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>User Profile</Text>
-      {user ? (
+    <FlatList
+      ListHeaderComponent={
         <>
-          <Image
-            source={{ uri: user.profilePicture || 'https://via.placeholder.com/150' }} // Placeholder image
-            style={styles.profileImage}
-          />
-          <Text style={styles.text}>Username: {user.username}</Text>
-          <Text style={styles.text}>Email: {user.email}</Text>
-          <Text style={styles.text}>Phone: {user.phoneNumber}</Text>
-          <Text style={styles.text}>Balance: ${netBalance ? netBalance.balance : '0.00'}</Text>
-
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
-          <FlatList
-            data={recentTransactions}
-            renderItem={renderTransaction}
-            keyExtractor={(item) => item.id}
-          />
-
-          <Text style={styles.sectionTitle}>Financial Goals</Text>
-          <FlatList
-            data={financialGoals}
-            renderItem={renderGoal}
-            keyExtractor={(item) => item.id}
-          />
+          {renderProfileHeader()}
+          {renderTransactionTitle()}
         </>
-      ) : (
-        <Text style={styles.text}>No user logged in</Text>
-      )}
-    </View>
+      }
+      data={recentTransactions}
+      renderItem={renderTransaction}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.container}
+      ListEmptyComponent={<Text style={styles.emptyText}>No recent transactions</Text>}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: "#f5f5f5",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 24,
-    textAlign: "center",
+  gradientBackground: {
+    padding: 16,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    marginBottom: 16,
+  },
+  profileContainer: {
+    alignItems: "center",
+    marginBottom: 16,
   },
   profileImage: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    alignSelf: "center",
     marginBottom: 16,
   },
-  text: {
+  username: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  email: {
     fontSize: 18,
-    marginBottom: 16,
+    color: "#fff",
   },
-  sectionTitle: {
+  phoneNumber: {
+    fontSize: 18,
+    color: "#fff",
+  },
+  balanceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  balance: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    marginLeft: 8,
+  },
+  transactionsTitleContainer: {
+    padding: 16,
+    backgroundColor: "#fff",
+  },
+  transactionsTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    marginVertical: 16,
+    color: "#333",
   },
   transaction: {
     flexDirection: "row",
@@ -117,38 +175,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
-  goal: {
-    padding: 10,
-    backgroundColor: "#fff",
-    marginBottom: 10,
-    borderRadius: 8,
-    elevation: 2,
-  },
-  goalDescription: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  goalAmount: {
-    fontSize: 16,
-    color: "#333",
-  },
-  goalProgress: {
-    fontSize: 14,
-    color: "#777",
-  },
-  button: {
-    height: 50,
-    backgroundColor: "red",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    marginTop: 16,
-  },
-  buttonText: {
-    color: "#fff",
+  errorText: {
     fontSize: 18,
-    fontWeight: "bold",
+    color: 'red',
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#333',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

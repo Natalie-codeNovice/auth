@@ -67,4 +67,20 @@ const deleteUser = async (userId, token) => {
   return response.data;
 };
 
-export { loginUser, registerUser, updateUser, updatePassword, deleteUser };
+
+// API call for deleting a user
+const getUser = async (userId, token) => {
+  console.log(token);
+  console.log(userId);
+  const response = await axios.get(
+    `${baseURL}/${userId}`, // Assuming endpoint format
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};
+
+export { loginUser, registerUser, updateUser, updatePassword, deleteUser, getUser };

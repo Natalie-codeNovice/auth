@@ -1,14 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, TextInput, Text, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
 import { updatePassword } from "../(services)/api/api";
-import { logoutAction } from "../(redux)/authSlice";
 import ProtectedRoute from "../components/ProtectedRoute";
-
 
 const ChangePasswordSchema = Yup.object().shape({
   currentPassword: Yup.string().required("Required"),
@@ -19,24 +17,25 @@ const ChangePasswordSchema = Yup.object().shape({
 });
 
 export default function ChangePassword() {
-  const dispatch = useDispatch();
   const router = useRouter();
-  const user = useSelector((state) => state.auth.user) || {};
   const token = useSelector((state) => state.auth.token);
+  const userId = useSelector((state) => state.auth.user?.userId);
+
+  const [error, setError] = useState(null);
+
   const handleLogout = () => {
-    dispatch(logoutAction());
-    router.push("/auth/login");
+    router.push("/(tabs)");
   };
 
   const mutation = useMutation({
     mutationFn: (values) => {
       const { currentPassword, newPassword } = values;
-      return updatePassword(user.userId, currentPassword, newPassword , token);
+      return updatePassword(userId, currentPassword, newPassword, token);
     },
     onSuccess: () => {
       Alert.alert(
         "Password Updated",
-        "Your password has been updated successfully. Please log out and log back in to see the changes.",
+        "Your password has been updated successfully.",
         [
           {
             text: "OK",
@@ -47,79 +46,78 @@ export default function ChangePassword() {
     },
     onError: (error) => {
       console.log(error);
+      setError(error?.response?.data?.message || "An error occurred.");
     },
   });
 
   return (
     <ProtectedRoute>
-    <View style={styles.container}>
-      <Text style={styles.title}>Change Password</Text>
-      {mutation.isError && (
-        <Text style={styles.errorText}>
-          {mutation.error?.response?.data?.message || "An error occurred."}
-        </Text>
-      )}
-      <Formik
-        initialValues={{
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        }}
-        validationSchema={ChangePasswordSchema}
-        onSubmit={(values) => {
-          mutation.mutate(values);
-        }}
-      >
-        {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Current Password"
-              onChangeText={handleChange("currentPassword")}
-              onBlur={handleBlur("currentPassword")}
-              value={values.currentPassword}
-              secureTextEntry
-            />
-            {errors.currentPassword && touched.currentPassword && (
-              <Text style={styles.errorText}>{errors.currentPassword}</Text>
-            )}
-            <TextInput
-              style={styles.input}
-              placeholder="New Password"
-              onChangeText={handleChange("newPassword")}
-              onBlur={handleBlur("newPassword")}
-              value={values.newPassword}
-              secureTextEntry
-            />
-            {errors.newPassword && touched.newPassword && (
-              <Text style={styles.errorText}>{errors.newPassword}</Text>
-            )}
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm New Password"
-              onChangeText={handleChange("confirmPassword")}
-              onBlur={handleBlur("confirmPassword")}
-              value={values.confirmPassword}
-              secureTextEntry
-            />
-            {errors.confirmPassword && touched.confirmPassword && (
-              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-            )}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSubmit}
-              disabled={mutation.isLoading}
-            >
-              {mutation.isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Update</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>Change Password</Text>
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
         )}
-      </Formik>
-    </View>
+        <Formik
+          initialValues={{
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          }}
+          validationSchema={ChangePasswordSchema}
+          onSubmit={(values) => {
+            mutation.mutate(values);
+          }}
+        >
+          {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+            <View style={styles.form}>
+              <TextInput
+                style={styles.input}
+                placeholder="Current Password"
+                onChangeText={handleChange("currentPassword")}
+                onBlur={handleBlur("currentPassword")}
+                value={values.currentPassword}
+                secureTextEntry
+              />
+              {errors.currentPassword && touched.currentPassword && (
+                <Text style={styles.errorText}>{errors.currentPassword}</Text>
+              )}
+              <TextInput
+                style={styles.input}
+                placeholder="New Password"
+                onChangeText={handleChange("newPassword")}
+                onBlur={handleBlur("newPassword")}
+                value={values.newPassword}
+                secureTextEntry
+              />
+              {errors.newPassword && touched.newPassword && (
+                <Text style={styles.errorText}>{errors.newPassword}</Text>
+              )}
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm New Password"
+                onChangeText={handleChange("confirmPassword")}
+                onBlur={handleBlur("confirmPassword")}
+                value={values.confirmPassword}
+                secureTextEntry
+              />
+              {errors.confirmPassword && touched.confirmPassword && (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              )}
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleSubmit}
+                disabled={mutation.isLoading}
+              >
+                {mutation.isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Update</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </Formik>
+      </View>
     </ProtectedRoute>
   );
 }

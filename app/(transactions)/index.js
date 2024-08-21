@@ -1,65 +1,104 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Modal, TextInput, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Modal, TextInput, Button, FlatList } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-
-const transactions = [
-  { id: '1', description: 'Freelance Project', amount: 500 },
-  { id: '2', description: 'Gift', amount: 200 },
-  { id: '3', description: 'Salary', amount: 1000 },
-  // Add more transactions as needed
-];
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { getExpense, getIncome, getNetBalance, addIncome } from '../(services)/api/transactionsApi';
 
 const Income = () => {
+  const queryClient = useQueryClient();
+  const cUser = useSelector((state) => state.auth.user) || {};
+  const token = useSelector((state) => state.auth.token);
+  const userId = cUser.userId;
+
+  const { data: netBalanceData, isLoading: isNetBalanceLoading } = useQuery({
+    queryKey: ['netBalance', userId, token],
+    queryFn: () => getNetBalance(userId, token),
+  });
+  
+  const { data: incomeData, isLoading: isIncomeLoading } = useQuery({
+    queryKey: ['income', userId, token],
+    queryFn: () => getIncome(userId, token),
+  });
+
+  const { data: expenseData, isLoading: isExpenseLoading } = useQuery({
+    queryKey: ['expenses', userId, token],
+    queryFn: () => getExpense(userId, token),
+  });
+
   const [modalVisible, setModalVisible] = useState(false);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
-  const [transactionType, setTransactionType] = useState('income');
-  const [incomeList, setIncomeList] = useState(transactions);
+  const [incomeList, setIncomeList] = useState([]);
+
+  useEffect(() => {
+    if (incomeData) {
+      setIncomeList(incomeData.income || []); // Ensure you're using the correct key from the API response
+    }
+  }, [incomeData]);
+
+  const mutation = useMutation({
+    mutationFn: (newIncome) => addIncome(newIncome, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['income', userId, token]); // Refetch income data after adding
+    },
+  });
 
   const handleAddIncome = () => {
     if (description && amount && category) {
-      setIncomeList([
-        ...incomeList,
-        { id: (incomeList.length + 1).toString(), description, amount: parseFloat(amount) }
-      ]);
-      setDescription('');
-      setAmount('');
-      setCategory('');
-      setModalVisible(false);
+      const newIncome = {
+        description,
+        amount: parseFloat(amount),
+        category,
+        userId,
+      };
+
+      mutation.mutate(newIncome, {
+        onSuccess: () => {
+          setDescription('');
+          setAmount('');
+          setCategory('');
+          setModalVisible(false);
+        },
+      });
     }
   };
+
+  if (isNetBalanceLoading || isIncomeLoading || isExpenseLoading) {
+    return <Text>Loading...</Text>; // You can replace this with a proper loading indicator
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.balanceCard}>
         <Text style={styles.balanceText}>Net Balance</Text>
-        <Text style={styles.amountText}>$2000</Text>
+        <Text style={styles.amountText}>${netBalanceData?.balance}</Text>
         <View style={styles.incomeExpenseRow}>
           <View style={styles.incomeContainer}>
             <FontAwesome name="arrow-down" size={24} color="green" />
             <Text style={styles.labelText}>Income</Text>
-            <Text style={styles.incomeAmount}>$2500</Text>
+            <Text style={styles.incomeAmount}>{incomeData?.totalIncome || '$0.00'}</Text>
           </View>
           <View style={styles.expenseContainer}>
             <FontAwesome name="arrow-up" size={24} color="red" />
             <Text style={styles.labelText}>Expense</Text>
-            <Text style={styles.expenseAmount}>$500</Text>
+            <Text style={styles.expenseAmount}>{expenseData?.totalExpenses || '$0.00'}</Text>
           </View>
         </View>
       </View>
 
-      <Text style={styles.recentTransactionsTitle}>Recent Income</Text>
+      <Text style={styles.recentTransactionsTitle}>Recent Incomes</Text>
       <FlatList
         data={incomeList}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.transactionList}
         renderItem={({ item }) => (
           <View style={styles.transactionItem}>
             <Text style={styles.transactionDescription}>{item.description}</Text>
-            <Text style={styles.transactionAmount}>${item.amount}</Text>
+            <Text style={styles.transactionAmount}>+${item.amount}</Text>
           </View>
         )}
-        contentContainerStyle={styles.transactionList}
       />
 
       <TouchableOpacity
@@ -122,10 +161,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     fontWeight: "bold",
-    marginStart:120,
+    marginStart: 120,
   },
   amountText: {
-    marginStart:120,
+    marginStart: 120,
     fontSize: 32,
     color: "#fff",
     fontWeight: "bold",

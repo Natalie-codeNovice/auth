@@ -42,4 +42,28 @@ const getExpense = async (userId, token) => {
   return response.data; 
 };
 
-export { getNetBalance, getIncome, getExpense };
+const getRecentTransactions = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/transactions/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  );
+  return response.data; 
+};
+
+const getFinancialGoals = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/expense/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  );
+  return response.data; 
+};
+
+export { getNetBalance, getIncome, getExpense,getRecentTransactions,getFinancialGoals };
