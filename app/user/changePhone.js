@@ -63,9 +63,7 @@ export default function ChangePhone() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+        console.log(loading)
     );
   }
 

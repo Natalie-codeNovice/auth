@@ -31,7 +31,7 @@ export default function Profile() {
           setRecentTransactions(transactionsData);
         }
       } catch (err) {
-        setError("Failed to load data");
+        console.log(setError("Failed to load data"))
       } finally {
         setLoading(false);
       }
@@ -42,17 +42,13 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+        console.log(loading)
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+        console.log(error)
     );
   }
 
@@ -185,5 +181,8 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     marginTop: 20,
+  },
+  loading: {
+    marginTop:351,
   },
 });

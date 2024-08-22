@@ -42,7 +42,24 @@ const getExpense = async (userId, token) => {
   return response.data; 
 };
 
+// API call for fetching saving transactions
+const getSavings = async (userId, token) => {
+  console.log(token);
+  console.log(userId);
+  const response = await axios.get(
+    `${baseURL}/saving/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  );
+  return response.data; 
+};
+
 const getRecentTransactions = async (userId, token) => {
+  console.log(token);
+  console.log(userId);
   const response = await axios.get(
     `${baseURL}/transactions/${userId}`, 
     {
@@ -54,9 +71,11 @@ const getRecentTransactions = async (userId, token) => {
   return response.data; 
 };
 
-const getFinancialGoals = async (userId, token) => {
-  const response = await axios.get(
-    `${baseURL}/expense/${userId}`, 
+const addTransaction = async (userId, transaction, token) => {
+  console.log(userId)
+  const response = await axios.post(
+    `${baseURL}/add/${userId}`, 
+    transaction,
     {
       headers: {
         Authorization: `Bearer ${token}`, 
@@ -65,5 +84,4 @@ const getFinancialGoals = async (userId, token) => {
   );
   return response.data; 
 };
-
-export { getNetBalance, getIncome, getExpense,getRecentTransactions,getFinancialGoals };
+export { getNetBalance, getIncome, getExpense,getRecentTransactions,addTransaction,getSavings };

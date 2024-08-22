@@ -9,7 +9,7 @@ export default function RootLayout() {
           name="index"
           options={{
             headerShown: false,
-            title: "Income",
+            title: "Transactions",
             tabBarIcon: ({ color }) => (
               <FontAwesome size={28} name="dollar" color={color} />
             ),

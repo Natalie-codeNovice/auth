@@ -5,6 +5,7 @@ import {
   TextInput,
   Text,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -12,10 +13,11 @@ import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { loginAction } from "../(redux)/authSlice";
 import { useDispatch } from "react-redux";
-import { loginUser } from "../(services)/api/api";
+import { loginUser, forgotPassword as forgotPasswordAPI } from "../(services)/api/api";
+
 
 const LoginSchema = Yup.object().shape({
-  email: Yup.string().email("Invalid email").required("Required"),
+  username: Yup.string().required("Username is required"),
   password: Yup.string().min(6, "Too Short!").required("Required"),
 });
 
@@ -23,22 +25,45 @@ export default function Login() {
   const router = useRouter();
   const dispatch = useDispatch();
   const [forgotPassword, setForgotPassword] = useState(false);
-  const mutation = useMutation({
+
+  const loginMutation = useMutation({
     mutationFn: loginUser,
     mutationKey: ["login"],
   });
 
-  const handleForgotPassword = () => {
-    console.log("Forgot Password");
+  const forgotPasswordMutation = useMutation({
+    mutationFn: forgotPasswordAPI,
+    mutationKey: ["forgotPassword"],
+  });
+
+  const handleForgotPassword = (email) => {
+    forgotPasswordMutation.mutate(
+      { email }, // Send the email as an object
+      {
+        onSuccess: () => {
+          Alert.alert(
+            "Success",
+            "A new password has been sent to your email.",
+            [{ text: "OK", onPress: () => setForgotPassword(false) }]
+          );
+        },
+        onError: (error) => {
+          Alert.alert(
+            "Error",
+            error.response?.data?.message || "An error occurred."
+          );
+        },
+      }
+    );
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-      {mutation?.isError && (
+      {loginMutation?.isError && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {mutation?.error?.response?.data?.message}
+            {loginMutation?.error?.response?.data?.message}
           </Text>
           {!forgotPassword && (
             <TouchableOpacity
@@ -51,31 +76,54 @@ export default function Login() {
         </View>
       )}
       {forgotPassword ? (
-        <View style={styles.forgotPasswordContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email"
-            keyboardType="email-address"
-          />
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleForgotPassword}
-          >
-            <Text style={styles.buttonText}>Submit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setForgotPassword(false)}
-            style={styles.backLink}
-          >
-            <Text style={styles.backLinkText}>Back to Login</Text>
-          </TouchableOpacity>
-        </View>
+        <Formik
+          initialValues={{ email: "" }}
+          validationSchema={Yup.object().shape({
+            email: Yup.string().email("Invalid email").required("Required"),
+          })}
+          onSubmit={(values) => handleForgotPassword(values.email)}
+        >
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            touched,
+          }) => (
+            <View style={styles.forgotPasswordContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                keyboardType="email-address"
+                onChangeText={handleChange("email")}
+                onBlur={handleBlur("email")}
+                value={values.email}
+              />
+              {errors.email && touched.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              )}
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.buttonText}>Submit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setForgotPassword(false)}
+                style={styles.backLink}
+              >
+                <Text style={styles.backLinkText}>Back to Login</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </Formik>
       ) : (
         <Formik
-          initialValues={{ email: "paccy@gmail.com", password: "123456789" }}
+          initialValues={{ username: "oplah", password: "123456" }}
           validationSchema={LoginSchema}
           onSubmit={(values) => {
-            mutation
+            loginMutation
               .mutateAsync(values)
               .then((data) => {
                 dispatch(loginAction(data));
@@ -97,14 +145,14 @@ export default function Login() {
             <View style={styles.form}>
               <TextInput
                 style={styles.input}
-                placeholder="Email"
-                onChangeText={handleChange("email")}
-                onBlur={handleBlur("email")}
-                value={values.email}
-                keyboardType="email-address"
+                placeholder="username"
+                onChangeText={handleChange("username")}
+                onBlur={handleBlur("username")}
+                value={values.username}
+                keyboardType="username"
               />
-              {errors.email && touched.email ? (
-                <Text style={styles.errorText}>{errors.email}</Text>
+              {errors.username && touched.username ? (
+                <Text style={styles.errorText}>{errors.username}</Text>
               ) : null}
               <TextInput
                 style={styles.input}
@@ -124,11 +172,11 @@ export default function Login() {
                 <Text style={styles.buttonText}>Login</Text>
               </TouchableOpacity>
               <View style={styles.loginPrompt}>
-              <Text style={styles.loginPromptText}>Don't you have an account?</Text>
-              <TouchableOpacity onPress={() => router.push("/auth/register")}>
-                <Text style={styles.loginLink}>Signup here</Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.loginPromptText}>Don't you have an account?</Text>
+                <TouchableOpacity onPress={() => router.push("/auth/register")}>
+                  <Text style={styles.loginLink}>Signup here</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </Formik>
@@ -196,6 +244,10 @@ const styles = StyleSheet.create({
   },
   backLink: {
     marginTop: 16,
+  },
+  backLinkText: {
+    color: "#6200ea",
+    fontSize: 16,
   },
   loginPrompt: {
     marginTop: 20,

@@ -4,9 +4,9 @@ import axios from "axios";
 const baseURL = "https://finance-zgvt.onrender.com";
 
 // API call for logging in a user
-const loginUser = async ({ email, password }) => {
+const loginUser = async ({ username, password }) => {
   const response = await axios.post(`${baseURL}/login`, {
-    email,
+    username,
     password
   });
   return response.data;
@@ -83,4 +83,11 @@ const getUser = async (userId, token) => {
   return response.data;
 };
 
-export { loginUser, registerUser, updateUser, updatePassword, deleteUser, getUser };
+// forgot password
+const forgotPassword = async ({ email }) => {
+  console.log(email)
+  const response = await axios.post(`${baseURL}/forgot-password`, {email});
+  return response.data;
+};
+
+export { loginUser, registerUser, updateUser, updatePassword, deleteUser, getUser,forgotPassword };
