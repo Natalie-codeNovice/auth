@@ -1,8 +1,6 @@
 import axios from "axios";
-
-// Base URL for the API
-const baseURL = "https://finance-zgvt.onrender.com";
-
+import {URL} from "./url";
+const baseURL = URL;
 // API call for logging in a user
 const loginUser = async ({ username, password }) => {
   const response = await axios.post(`${baseURL}/login`, {

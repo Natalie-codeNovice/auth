@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Text, Image, FlatList, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Text, Image, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useSelector } from "react-redux";
 import { getUser } from "../(services)/api/api";
 import { getNetBalance, getRecentTransactions } from "../(services)/api/transactionsApi";
@@ -31,7 +31,8 @@ export default function Profile() {
           setRecentTransactions(transactionsData);
         }
       } catch (err) {
-        console.log(setError("Failed to load data"))
+        setError("Failed to load data");
+        Alert.alert("Error", "Failed to load data");
       } finally {
         setLoading(false);
       }
@@ -42,13 +43,17 @@ export default function Profile() {
 
   if (loading) {
     return (
-        console.log(loading)
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
     );
   }
 
   if (error) {
     return (
-        console.log(error)
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
     );
   }
 
@@ -84,19 +89,21 @@ export default function Profile() {
   );
 
   return (
-    <FlatList
-      ListHeaderComponent={
-        <>
-          {renderProfileHeader()}
-          {renderTransactionTitle()}
-        </>
-      }
-      data={recentTransactions}
-      renderItem={renderTransaction}
-      keyExtractor={(item) => item.id}
-      contentContainerStyle={styles.container}
-      ListEmptyComponent={<Text style={styles.emptyText}>No recent transactions</Text>}
-    />
+    <View style={styles.container}>
+      <FlatList
+        ListHeaderComponent={
+          <>
+            {renderProfileHeader()}
+            {renderTransactionTitle()}
+          </>
+        }
+        data={recentTransactions}
+        renderItem={renderTransaction}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={<Text style={styles.emptyText}>No recent transactions</Text>}
+      />
+    </View>
   );
 }
 
@@ -104,6 +111,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  listContainer: {
+    flexGrow: 1,
   },
   gradientBackground: {
     padding: 16,
@@ -182,7 +192,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-  loading: {
-    marginTop:351,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

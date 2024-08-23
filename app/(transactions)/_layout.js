@@ -28,12 +28,12 @@ export default function RootLayout() {
           }}
         />
         <Tabs.Screen
-          name="expense"
+          name="report"
           options={{
             headerShown:false,
-            title: "Expenses",
+            title: "Report",
             tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="minus-circle" color={color} />
+              <FontAwesome size={28} name="book" color={color} />
             ),
           }}
         />

@@ -1,7 +1,7 @@
 import axios from "axios";
+import { URL } from "./url";
 
-// Base URL for the API
-const baseURL = "https://finance-zgvt.onrender.com";
+const baseURL = URL;
 
 // API call for fetching net balance
 const getNetBalance = async (userId, token) => {
@@ -44,8 +44,6 @@ const getExpense = async (userId, token) => {
 
 // API call for fetching saving transactions
 const getSavings = async (userId, token) => {
-  console.log(token);
-  console.log(userId);
   const response = await axios.get(
     `${baseURL}/saving/${userId}`, 
     {
@@ -54,9 +52,11 @@ const getSavings = async (userId, token) => {
       },
     }
   );
-  return response.data; 
+  console.log(response.data);
+  return response.data;
 };
 
+// API call for fetching recent transactions
 const getRecentTransactions = async (userId, token) => {
   console.log(token);
   console.log(userId);
@@ -71,8 +71,37 @@ const getRecentTransactions = async (userId, token) => {
   return response.data; 
 };
 
+// API call for fetching weekly report
+const getWeekReport = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/week-report/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  );
+  console.log('Week Report Response:', response.data); 
+  return response.data;
+};
+
+// API call for fetching monthly report
+const getMonthReport = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/month-report/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  );
+  console.log('Month Report Response:', response.data); 
+  return response.data;
+};
+
+// API call for adding a transaction
 const addTransaction = async (userId, transaction, token) => {
-  console.log(userId)
+  console.log(userId);
   const response = await axios.post(
     `${baseURL}/add/${userId}`, 
     transaction,
@@ -84,4 +113,15 @@ const addTransaction = async (userId, transaction, token) => {
   );
   return response.data; 
 };
-export { getNetBalance, getIncome, getExpense,getRecentTransactions,addTransaction,getSavings };
+
+// Export all functions
+export { 
+  getNetBalance, 
+  getIncome, 
+  getExpense, 
+  getRecentTransactions, 
+  addTransaction, 
+  getSavings,
+  getWeekReport,
+  getMonthReport
+};
