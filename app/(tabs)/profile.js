@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Text, Image, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useSelector } from "react-redux";
 import { getUser } from "../(services)/api/api";
-import { getNetBalance, getRecentTransactions } from "../(services)/api/transactionsApi";
+import { getNetBalance} from "../(services)/api/transactionsApi";
 import { FontAwesome } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -12,7 +12,6 @@ export default function Profile() {
 
   const [user, setUser] = useState(null);
   const [netBalance, setNetBalance] = useState({});
-  const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,9 +25,6 @@ export default function Profile() {
 
           const netBalanceData = await getNetBalance(userId, token);
           setNetBalance(netBalanceData);
-
-          const transactionsData = await getRecentTransactions(userId, token);
-          setRecentTransactions(transactionsData);
         }
       } catch (err) {
         setError("Failed to load data");
@@ -82,26 +78,14 @@ export default function Profile() {
     </View>
   );
 
-  const renderTransactionTitle = () => (
-    <View style={styles.transactionsTitleContainer}>
-      <Text style={styles.transactionsTitle}>Recent Transactions</Text>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
       <FlatList
         ListHeaderComponent={
           <>
             {renderProfileHeader()}
-            {renderTransactionTitle()}
           </>
         }
-        data={recentTransactions}
-        renderItem={renderTransaction}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={<Text style={styles.emptyText}>No recent transactions</Text>}
       />
     </View>
   );
@@ -154,32 +138,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
     marginLeft: 8,
-  },
-  transactionsTitleContainer: {
-    padding: 16,
-    backgroundColor: "#fff",
-  },
-  transactionsTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  transaction: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 10,
-    backgroundColor: "#fff",
-    marginBottom: 10,
-    borderRadius: 8,
-    elevation: 2,
-  },
-  transactionDescription: {
-    fontSize: 16,
-    color: "#333",
-  },
-  transactionAmount: {
-    fontSize: 16,
-    color: "#333",
   },
   errorText: {
     fontSize: 18,

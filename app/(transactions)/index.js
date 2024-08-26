@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { Picker } from '@react-native-picker/picker';
-
+import Icon from 'react-native-vector-icons/FontAwesome';
 // Validation schema with Yup
 const validationSchema = Yup.object().shape({
   description: Yup.string().required('Description is required'),
@@ -59,6 +59,7 @@ const NewTransaction = () => {
   const [incomeList, setIncomeList] = useState([]);
   const [expenseList, setExpenseList] = useState([]);
   const [transactionType, setTransactionType] = useState('income');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (incomeData) {
@@ -70,32 +71,39 @@ const NewTransaction = () => {
   }, [incomeData, expenseData]);
 
   const mutation = useMutation({
-    mutationFn: (newTransaction) => addTransaction(userId, newTransaction, token),
+    mutationFn: async (newTransaction) => {
+      // Check for balance before adding transaction
+      if (newTransaction.type === 'expense' && newTransaction.amount > netBalanceData.balance) {
+        throw new Error('Insufficient balance');
+      }
+      await addTransaction(userId, newTransaction, token);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['income', userId, token]);
       queryClient.invalidateQueries(['expenses', userId, token]);
       setModalVisible(false);
     },
     onError: (error) => {
-      console.error('Error adding transaction:', error);
+      setError(error.message || 'An error occurred');
     },
   });
+
 
   return (
     <View style={styles.container}>
       <View style={styles.balanceCard}>
         <Text style={styles.balanceText}>Net Balance</Text>
-        <Text style={styles.amountText}>${netBalanceData?.balance}</Text>
+        <Text style={styles.amountText}>{netBalanceData?.balance || '0.00'}Rwf</Text>
         <View style={styles.incomeExpenseRow}>
           <View style={styles.incomeContainer}>
             <FontAwesome name="arrow-down" size={24} color="green" />
             <Text style={styles.labelText}>Income</Text>
-            <Text style={styles.incomeAmount}>{incomeData?.totalIncome || '$0.00'}</Text>
+            <Text style={styles.incomeAmount}>{incomeData?.totalIncome || '0.00'}Rwf</Text>
           </View>
           <View style={styles.expenseContainer}>
             <FontAwesome name="arrow-up" size={24} color="red" />
             <Text style={styles.labelText}>Expense</Text>
-            <Text style={styles.expenseAmount}>{expenseData?.totalExpenses || '$0.00'}</Text>
+            <Text style={styles.expenseAmount}>{expenseData?.totalExpenses || '0.00'}Rwf</Text>
           </View>
         </View>
       </View>
@@ -124,7 +132,7 @@ const NewTransaction = () => {
           <View style={styles.transactionItem}>
             <Text style={styles.transactionDescription}>{item.description}</Text>
             <Text style={styles.transactionAmount}>
-              {transactionType === 'income' ? `+${item.amount}` : `-${item.amount}`}
+              {transactionType === 'income' ? `+${item.amount}` : `${item.amount}`}Rwf
             </Text>
           </View>
         )}
@@ -145,7 +153,12 @@ const NewTransaction = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.close} onPress={() => setModalVisible(false)}>X</Text>
+                        <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Icon name="times" size={24} color="red" />
+            </TouchableOpacity>
             <Text style={styles.modalTitle}>Record Transaction</Text>
             <View style={styles.transactionTypeContainer}>
               <TouchableOpacity
@@ -227,6 +240,11 @@ const NewTransaction = () => {
                       <Text style={styles.submitButtonText}>Add {transactionType}</Text>
                     </LinearGradient>
                   </TouchableOpacity>
+                  {error && (
+                    <View style={styles.errorContainer}>
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  )}
                 </>
               )}
             </Formik>
@@ -374,12 +392,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  close: {
-    color:'#f0190a',
-    marginStart:230,
-    fontSize: 20,
-    marginBottom:18,
-
+  closeButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 10,
   },
   transactionTypeContainer: {
     flexDirection: 'row',
