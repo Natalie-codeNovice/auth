@@ -1,13 +1,14 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, Modal, TextInput, Button, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, Modal, TextInput, Button, Platform, RefreshControl } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux'; 
-import { addTransaction, getSavings, getNetBalance } from '../(services)/api/transactionsApi'; // Ensure getNetBalance is imported
+import { addTransaction, getSavings, getNetBalance, useSaving } from '../(services)/api/transactionsApi'; 
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as Yup from 'yup';
 import { Formik } from 'formik';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import RNPickerSelect from 'react-native-picker-select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 
 const categoryOptions = [
   { label: 'Shelter', value: 'Shelter' },
@@ -23,24 +24,36 @@ const Saving = () => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [minDate, setMinDate] = useState(new Date()); 
+  const [refreshing, setRefreshing] = useState(false); // State for refreshing
   const queryClient = useQueryClient();
   const token = useSelector(state => state.auth.token); 
   const userId = useSelector(state => state.auth.user?.userId);
 
-  // Fetch savings data with React Query
-  const { data, isLoading, error } = useQuery({
+  const { mutate: useSavingMutate } = useMutation({
+    mutationFn: (savingId) => useSaving(savingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['savings', userId]);
+      Alert.alert("Success", "Amount is added to net balance.");
+    },
+    onError: (error) => {
+      console.error('Error using saving:', error);
+      Alert.alert("Error", "An error occurred while using the saving. Please try again.");
+    },
+  });
+  
+
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['savings', userId],
     queryFn: () => getSavings(userId, token),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    refetchOnWindowFocus: false, // Optionally disable refetch on window focus
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Mutation to add a new saving
   const mutation = useMutation({
     mutationFn: (newTransaction) => addTransaction(userId, newTransaction, token),
     onSuccess: () => {
-      queryClient.invalidateQueries(['savings', userId]); // Ensure savings are refetched
-      setModalVisible(false); // Close modal after submission
+      queryClient.invalidateQueries(['savings', userId]);
+      setModalVisible(false);
     },
     onError: (error) => {
       console.error('Error adding transaction:', error);
@@ -48,21 +61,27 @@ const Saving = () => {
     },
   });
 
-  const handleUseButtonPress = (isOverdue, usageDate) => {
+  const handleUseButtonPress = (isOverdue, savingId, usageDate) => {
     if (!isOverdue) {
       Alert.alert(
         'Cannot Use Savings',
         `You will be able to use these savings on ${usageDate.toDateString()}.`
       );
     } else {
-      // Handle the logic for using the savings here
-      console.log('Savings used successfully');
+      Alert.alert(
+        'Confirm Use',
+        'Are you sure you want to use these savings?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Use', onPress: () => useSavingMutate(savingId) }
+        ]
+      );
     }
   };
+  
 
   const handleAddSaving = async (values) => {
     try {
-      // Fetch the net balance
       const netBalanceResponse = await getNetBalance(userId, token);
       const netBalance = netBalanceResponse?.balance || 0;
 
@@ -83,7 +102,6 @@ const Saving = () => {
         return;
       }
 
-      // Add the saving
       await mutation.mutateAsync({ ...values, usageDate: date.toISOString().split('T')[0] });
       Alert.alert("Saving Added", "New saving has been recorded.");
     } catch (error) {
@@ -114,12 +132,19 @@ const Saving = () => {
         </View>
         <TouchableOpacity 
           style={[styles.useButton, isOverdue ? styles.buttonEnabled : styles.buttonDisabled]}
-          onPress={() => handleUseButtonPress(isOverdue, usageDate)}
+          onPress={() => handleUseButtonPress(isOverdue, item.id, usageDate)}
         >
           <Text style={styles.buttonText}>Use</Text>
         </TouchableOpacity>
       </View>
     );
+  };
+  
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch(); // Refetch the data
+    setRefreshing(false);
   };
 
   if (isLoading) {
@@ -139,16 +164,20 @@ const Saving = () => {
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
         />
       ) : (
         <Text style={styles.noData}>No savings data available.</Text>
       )}
-      {/* Add New Saving Button */}
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Icon name="save" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* Modal for Adding New Saving */}
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -222,7 +251,7 @@ const Saving = () => {
                       mode="date"
                       display="default"
                       onChange={handleDateChange}
-                      minimumDate={minDate} // Minimum selectable date
+                      minimumDate={minDate}
                     />
                   )}
                   
@@ -261,6 +290,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#fff',
+    top:54,
   },
   totalSavings: {
     fontSize: 20,
@@ -316,7 +346,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 90,
     right: 20,
     backgroundColor: '#007bff',
     padding: 16,

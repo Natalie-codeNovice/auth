@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Button, ActivityIndicator, FlatList, RefreshControl } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, FlatList, RefreshControl, Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import { getMonthReport, getWeekReport } from '../(services)/api/transactionsApi';
 import { useQuery } from '@tanstack/react-query';
+import { Appbar } from 'react-native-paper';
+import { Menu, MenuTrigger, MenuOptions, MenuOption, MenuProvider } from 'react-native-popup-menu';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const Report = () => {
   const [isWeek, setIsWeek] = useState(true);
@@ -10,32 +13,44 @@ const Report = () => {
   const token = useSelector(state => state.auth.token);
   const userId = useSelector(state => state.auth.user?.userId);
 
-  // Use React Query to fetch Week or Month reports
   const reportQuery = useQuery({
-    queryKey: ['report', isWeek, userId], // Query key
-    queryFn: () => (isWeek ? getWeekReport(userId, token) : getMonthReport(userId, token)), // Query function
-    enabled: !!userId, // Enable the query only if userId is available
-    refetchOnWindowFocus: false, // Avoid refetching on window focus
-    keepPreviousData: true, // Keep previous data while fetching new data
+    queryKey: ['report', isWeek, userId],
+    queryFn: () => (isWeek ? getWeekReport(userId, token) : getMonthReport(userId, token)),
+    enabled: !!userId,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
   });
 
-  const toggleReportType = () => {
-    setIsWeek(prev => !prev);
-    reportQuery.refetch(); // Manually refetch the data when switching the report type
+  const handleMenuSelect = (value) => {
+    setIsWeek(value === 'week');
+    reportQuery.refetch();
   };
 
   const renderTransactionItem = ({ item, index }) => {
-    if (!item) return null; // Ensure item is not undefined
+    if (!item) return null;
+
+    // Define gradients based on transaction type
+    const typeGradients = {
+      expense: ['#FF4D4D', '#FF1A1A'], // Red gradient
+      income: ['#4CAF50', '#388E3C'], // Green gradient
+      saving: ['#2196F3', '#0D47A1'], // Blue gradient
+    };
+
+    // Determine the gradient based on the transaction type
+    const gradientColors = typeGradients[item.type] || ['#0066cc', '#0033cc']; // Default gradient if type is unknown
 
     return (
       <View style={styles.transactionItem}>
         <View style={styles.transactionLeft}>
-          <View style={styles.numberCircle}>
+          <LinearGradient
+            colors={gradientColors}
+            style={styles.numberCircle}
+          >
             <Text style={styles.transactionNumber}>{index + 1}</Text>
-          </View>
+          </LinearGradient>
           <View style={styles.transactionDetails}>
             <Text style={styles.transactionText}>{item.description || 'N/A'}</Text>
-            <Text style={styles.transactionText}>{item.type || 'N/A'}</Text>
+            <Text style={styles.transactionType}>{item.type || 'N/A'}</Text>
           </View>
         </View>
         <View style={styles.transactionRight}>
@@ -49,7 +64,7 @@ const Report = () => {
   if (reportQuery.isLoading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#0066cc" />
       </View>
     );
   }
@@ -62,41 +77,70 @@ const Report = () => {
     );
   }
 
-  const reportData = reportQuery.data || {}; // Fallback to empty object if data is undefined
-  const transactions = reportData.transactions || []; // Ensure transactions is defined
+  const reportData = reportQuery.data || {};
+  const transactions = reportData.transactions || [];
 
   return (
-    <View style={styles.container}>
-      <Button title={`Switch to ${isWeek ? 'Month' : 'Week'} Report`} onPress={toggleReportType} />
-      <View style={styles.reportContainer}>
-        <Text style={styles.title}>{isWeek ? 'Week Report' : 'Month Report'}</Text>
-        <Text style={styles.summary}>Total Income: {reportData.totalIncome || '0.00'}RWF</Text>
-        <Text style={styles.summary}>Total Savings: {reportData.totalSavings || '0.00'}RWF</Text>
-        <Text style={styles.summary}>Total Expenses: {reportData.totalExpenses || '0.00'}RWF</Text>
-        <Text style={styles.summary}>Net Balance: {reportData.netBalance || '0.00'}RWF</Text>
-        <FlatList
-          data={transactions}
-          renderItem={renderTransactionItem}
-          keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.transactionList}
-          refreshControl={
-            <RefreshControl
-              refreshing={reportQuery.isRefetching}
-              onRefresh={() => reportQuery.refetch()}
-            />
-          }
-          ListFooterComponent={
-            reportQuery.hasNextPage ? (
-              <Button
-                title="Load More"
-                onPress={() => reportQuery.fetchNextPage()}
-                disabled={reportQuery.isFetchingNextPage}
+    <MenuProvider>
+      <View style={styles.container}>
+        <Appbar.Header>
+          <Appbar.Content title="Report" />
+          <Menu>
+            <MenuTrigger>
+              <Appbar.Action icon="dots-vertical" />
+            </MenuTrigger>
+            <MenuOptions>
+              <MenuOption onSelect={() => handleMenuSelect('week')}>
+                <Text>Week Report</Text>
+              </MenuOption>
+              <MenuOption onSelect={() => handleMenuSelect('month')}>
+                <Text>Month Report</Text>
+              </MenuOption>
+            </MenuOptions>
+          </Menu>
+        </Appbar.Header>
+        <View style={styles.reportContainer}>
+          <View style={styles.netBalanceContainer}>
+            <LinearGradient
+              colors={['#990f87', '#0072ff']} // gradient colors
+              style={styles.netBalanceCircle}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Text style={styles.netBalanceText}>{reportData.netBalance || '0.00'} RWF</Text>
+            </LinearGradient>
+            <Text style={styles.reportTitle}>{isWeek ? 'Week Report' : 'Month Report'}</Text>
+          </View>
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Income</Text>
+              <Text style={styles.summaryValue}>{reportData.totalIncome || '0.00'} RWF</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Savings</Text>
+              <Text style={styles.summaryValue}>{reportData.totalSavings || '0.00'} RWF</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Expenses</Text>
+              <Text style={styles.summaryValue}>{reportData.totalExpenses || '0.00'} RWF</Text>
+            </View>
+          </View>
+          <FlatList
+            data={transactions}
+            renderItem={renderTransactionItem}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={styles.transactionList}
+            refreshControl={
+              <RefreshControl
+                refreshing={reportQuery.isRefetching}
+                onRefresh={() => reportQuery.refetch()}
               />
-            ) : null
-          }
-        />
+            }
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+          />
+        </View>
       </View>
-    </View>
+    </MenuProvider>
   );
 };
 
@@ -105,35 +149,86 @@ export default Report;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#f5f5f5',
   },
   reportContainer: {
-    marginTop: 20,
+    flex: 1,
+    padding: 20,
   },
-  title: {
-    fontSize: 24,
+  netBalanceContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  netBalanceCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  netBalanceText: {
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
+    color: '#ffffff',
   },
-  summary: {
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0066cc',
+    marginTop: 10,
+  },
+  summaryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  summaryCard: {
+    flex: 1,
+    margin: 5,
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  summaryTitle: {
     fontSize: 16,
-    marginVertical: 5,
     fontWeight: '600',
+    color: '#555',
+  },
+  summaryValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0066cc',
+    marginTop: 5,
   },
   error: {
     color: 'red',
     fontSize: 16,
+    textAlign: 'center',
   },
   transactionList: {
-    marginTop: 20,
+    paddingHorizontal: 20,
   },
   transactionItem: {
     flexDirection: 'row',
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    marginBottom: 10,
+    padding: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
     alignItems: 'center',
   },
@@ -146,7 +241,6 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -154,13 +248,18 @@ const styles = StyleSheet.create({
   transactionNumber: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#555',
+    color: '#ffffff',
   },
   transactionDetails: {
     flex: 1,
   },
   transactionText: {
     fontSize: 14,
+    color: '#333',
+  },
+  transactionType: {
+    fontSize: 12,
+    color: '#999',
   },
   transactionRight: {
     alignItems: 'flex-end',
@@ -168,10 +267,14 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'blue',
+    color: '#333',
   },
   transactionDate: {
     fontSize: 12,
-    color: '#888',
+    color: '#999',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#ddd',
   },
 });

@@ -26,12 +26,16 @@ function AppWrapper() {
        
       {/* report  */}
       <Stack.Screen name="report/index" options={{ title: "Back", headerShown: true }} />  
+      <Stack.Screen name="report/week" options={{ title: "Back", headerShown: true }} />
+      <Stack.Screen name="report/month" options={{ title: "Back", headerShown: true }} /> 
+      <Stack.Screen name="report/day" options={{ title: "Back", headerShown: true }} /> 
+      <Stack.Screen name="report/custom" options={{ title: "Back", headerShown: true }} />      
       <Stack.Screen name="history/index" options={{ title: "Back", headerShown: true }} />  
 
 
       {/* bottom tab */}
       <Stack.Screen name="(tabs)" options={{ title: "TabsHome", headerShown: false }} />           
-      <Stack.Screen name="(transactions)" options={{ title: "Back", headerShown: true }} />           
+      <Stack.Screen name="(transactions)" options={{ title: "Back", headerShown: false }} />           
     </Stack>
   );
 }

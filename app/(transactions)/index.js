@@ -261,6 +261,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: "#f5f5f5",
+    top:54,
   },
   balanceCard: {
     backgroundColor: "#6200ea",
@@ -312,6 +313,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
+    marginTop: 20,
   },
   transactionList: {
     paddingBottom: 100, // For space below the list
@@ -335,7 +337,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: "absolute",
-    bottom: 20,
+    bottom: 80,
     right: 20,
     backgroundColor: "#6200ea",
     width: 60,

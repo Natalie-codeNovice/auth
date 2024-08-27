@@ -1,22 +1,23 @@
+import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
-
 const ReportHome = () => {
+  const router = useRouter();
   const handleCustomReport = () => {
-    console.log("Custom Report clicked!");
+    router.push("./custom");
   };
 
   const handleDayReport = () => {
-    console.log("Day Report clicked!");
+    router.push("./day");
   };
 
   const handleWeek = () => {
-    console.log("Week Report clicked!");
+    router.push("./week");
   };
 
   const handleMonthReport = () => {
-    console.log("Month Report clicked!");
+    router.push("./month");
   };
 
   return (

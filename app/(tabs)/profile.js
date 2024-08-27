@@ -65,17 +65,10 @@ export default function Profile() {
         <Text style={styles.phoneNumber}>{user?.phoneNumber}</Text>
         <View style={styles.balanceContainer}>
           <FontAwesome name="money" size={24} color="#fff" />
-          <Text style={styles.balance}>${netBalance.balance || '0.00'}</Text>
+          <Text style={styles.balance}>{netBalance.balance || '0.00'}Rwf</Text>
         </View>
       </View>
     </LinearGradient>
-  );
-
-  const renderTransaction = ({ item }) => (
-    <View style={styles.transaction}>
-      <Text style={styles.transactionDescription}>{item.description}</Text>
-      <Text style={styles.transactionAmount}>{item.amount}</Text>
-    </View>
   );
 
   return (

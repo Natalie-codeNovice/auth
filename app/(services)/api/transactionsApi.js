@@ -52,14 +52,11 @@ const getSavings = async (userId, token) => {
       },
     }
   );
-  console.log(response.data);
   return response.data;
 };
 
 // API call for fetching recent transactions
 const getRecentTransactions = async (userId, token) => {
-  console.log(token);
-  console.log(userId);
   const response = await axios.get(
     `${baseURL}/transactions/${userId}`, 
     {
@@ -81,7 +78,6 @@ const getWeekReport = async (userId, token) => {
       },
     }
   );
-  console.log('Week Report Response:', response.data); 
   return response.data;
 };
 
@@ -94,14 +90,12 @@ const getMonthReport = async (userId, token) => {
         Authorization: `Bearer ${token}`, 
       },
     }
-  );
-  console.log('Month Report Response:', response.data); 
+  ); 
   return response.data;
 };
 
 // API call for adding a transaction
 const addTransaction = async (userId, transaction, token) => {
-  console.log(userId);
   const response = await axios.post(
     `${baseURL}/add/${userId}`, 
     transaction,
@@ -110,6 +104,14 @@ const addTransaction = async (userId, transaction, token) => {
         Authorization: `Bearer ${token}`, 
       },
     }
+  );
+  return response.data; 
+};
+
+const useSaving = async (savingId) => {
+  console.log("logged savingId: ",savingId);
+  const response = await axios.put(
+    `${baseURL}/saving/use/${savingId}`, 
   );
   return response.data; 
 };
@@ -123,5 +125,6 @@ export {
   addTransaction, 
   getSavings,
   getWeekReport,
-  getMonthReport
+  getMonthReport,
+  useSaving
 };
