@@ -120,7 +120,7 @@ export default function Login() {
         </Formik>
       ) : (
         <Formik
-          initialValues={{ username: "oplah", password: "123456" }}
+          initialValues={{ username: "amelie", password: "123456" }}
           validationSchema={LoginSchema}
           onSubmit={(values) => {
             loginMutation

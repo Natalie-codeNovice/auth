@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, Modal, TextInput, Button, Platform, RefreshControl } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux'; 
 import { addTransaction, getSavings, getNetBalance, useSaving } from '../(services)/api/transactionsApi'; 
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -8,7 +8,6 @@ import { Formik } from 'formik';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import RNPickerSelect from 'react-native-picker-select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
 
 const categoryOptions = [
   { label: 'Shelter', value: 'Shelter' },
@@ -24,29 +23,19 @@ const Saving = () => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [minDate, setMinDate] = useState(new Date()); 
-  const [refreshing, setRefreshing] = useState(false); // State for refreshing
+  const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const token = useSelector(state => state.auth.token); 
   const userId = useSelector(state => state.auth.user?.userId);
 
-  const { mutate: useSavingMutate } = useMutation({
-    mutationFn: (savingId) => useSaving(savingId),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['savings', userId]);
-      Alert.alert("Success", "Amount is added to net balance.");
-    },
-    onError: (error) => {
-      console.error('Error using saving:', error);
-      Alert.alert("Error", "An error occurred while using the saving. Please try again.");
-    },
-  });
-  
-
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data = { totalSavings: 0, savings: [] }, isLoading, error, refetch } = useQuery({
     queryKey: ['savings', userId],
     queryFn: () => getSavings(userId, token),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    onError: (error) => {
+      console.error('Error loading savings:', error);
+    }
   });
 
   const mutation = useMutation({
@@ -78,17 +67,11 @@ const Saving = () => {
       );
     }
   };
-  
 
   const handleAddSaving = async (values) => {
     try {
       const netBalanceResponse = await getNetBalance(userId, token);
       const netBalance = netBalanceResponse?.balance || 0;
-
-      if (netBalance === undefined) {
-        Alert.alert("Error", "Unable to fetch net balance. Please try again.");
-        return;
-      }
 
       if (netBalance <= 0) {
         Alert.alert("Error", "Add income first before creating a saving.");
@@ -119,11 +102,11 @@ const Saving = () => {
     }
   };
 
-  const renderItem = ({ item }) => {
+  const renderItem = React.useCallback(({ item }) => {
     const amount = parseFloat(item.amount) || 0;
     const usageDate = new Date(item.usageDate);
     const isOverdue = new Date() > usageDate;
-  
+
     return (
       <View style={styles.item}>
         <View style={styles.itemContent}>
@@ -138,27 +121,24 @@ const Saving = () => {
         </TouchableOpacity>
       </View>
     );
-  };
-  
+  }, [handleUseButtonPress]);
 
-  const onRefresh = async () => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await refetch(); // Refetch the data
+    await refetch();
     setRefreshing(false);
-  };
+  }, [refetch]);
 
   if (isLoading) {
     return <Text>Loading...</Text>;
   }
 
-  if (error) {
-    return <Text>Error loading savings</Text>;
-  }
-
   return (
     <View style={styles.container}>
-      <Text style={styles.totalSavings}>Total Savings: {data?.totalSavings || '0.00'} RWF</Text>
-      {data?.savings.length > 0 ? (
+      <Text style={styles.totalSavings}>
+        Total Savings: {data.totalSavings === 0 ? '0.00 RWF' : data.totalSavings + ' RWF'}
+      </Text>
+      {data.totalSavings > 0 && data.savings.length > 0 ? (
         <FlatList
           data={data.savings}
           renderItem={renderItem}
@@ -172,7 +152,9 @@ const Saving = () => {
           }
         />
       ) : (
-        <Text style={styles.noData}>No savings data available.</Text>
+        <Text style={styles.noData}>
+          {data.totalSavings === 0 ? 'No savings available.' : 'No savings data available.'}
+        </Text>
       )}
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Icon name="save" size={24} color="#fff" />
@@ -216,8 +198,9 @@ const Saving = () => {
                     onBlur={handleBlur('description')}
                     value={values.description}
                   />
-                  {touched.description && errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
-                  
+                  {errors.description && touched.description ? (
+                    <Text style={styles.errorText}>{errors.description}</Text>
+                  ) : null}
                   <TextInput
                     style={styles.input}
                     placeholder="Amount"
@@ -226,8 +209,9 @@ const Saving = () => {
                     onBlur={handleBlur('amount')}
                     value={values.amount}
                   />
-                  {touched.amount && errors.amount && <Text style={styles.errorText}>{errors.amount}</Text>}
-                  
+                  {errors.amount && touched.amount ? (
+                    <Text style={styles.errorText}>{errors.amount}</Text>
+                  ) : null}
                   <RNPickerSelect
                     placeholder={{ label: 'Select a category...', value: '' }}
                     items={categoryOptions}
@@ -235,27 +219,28 @@ const Saving = () => {
                     value={values.category}
                     style={pickerSelectStyles}
                   />
-                  {touched.category && errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
+                  {errors.category && touched.category ? (
+                    <Text style={styles.errorText}>{errors.category}</Text>
+                  ) : null}
                   
                   <TouchableOpacity
                     style={styles.datePickerButton}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <Text>I will use it at</Text>
-                    <Text style={styles.datePickerText}>{date.toISOString().split('T')[0]}</Text>
+                    <Text style={styles.datePickerText}>Select Usage Date: {date.toDateString()}</Text>
                   </TouchableOpacity>
-                  
+
                   {showDatePicker && (
                     <DateTimePicker
                       value={date}
                       mode="date"
                       display="default"
-                      onChange={handleDateChange}
                       minimumDate={minDate}
+                      onChange={handleDateChange}
                     />
                   )}
-                  
-                  <Button title="SAVE" onPress={handleSubmit} />
+
+                  <Button title="Add Saving" onPress={handleSubmit} />
                 </View>
               )}
             </Formik>
@@ -266,54 +251,28 @@ const Saving = () => {
   );
 };
 
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    fontSize: 16,
-    padding: 10,
-    borderRadius: 5,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    marginVertical: 5,
-  },
-  inputAndroid: {
-    fontSize: 16,
-    padding: 10,
-    borderRadius: 5,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    marginVertical: 5,
-  },
-});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-    top:54,
+    padding: 20,
+    top:57
   },
   totalSavings: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
+    marginBottom: 10,
   },
   list: {
-    paddingBottom: 20,
+    flexGrow: 1,
   },
   item: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    marginBottom: 8,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
   itemContent: {
     flex: 1,
@@ -324,38 +283,35 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: 16,
-    color: '#007bff',
+    color: 'green',
   },
   useButton: {
-    padding: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 5,
   },
   buttonEnabled: {
-    backgroundColor: '#28a745',
+    backgroundColor: 'green',
   },
   buttonDisabled: {
-    backgroundColor: '#6c757d',
+    backgroundColor: 'gray',
   },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
   },
-  noData: {
-    textAlign: 'center',
-    color: '#888',
-  },
   addButton: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 20,
     right: 20,
     backgroundColor: '#007bff',
-    padding: 16,
     borderRadius: 50,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    padding: 15,
     elevation: 5,
+  },
+  noData: {
+    textAlign: 'center',
+    marginTop: 20,
   },
   modalContainer: {
     flex: 1,
@@ -364,49 +320,64 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '85%',
+    width: '80%',
+    padding: 20,
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    alignItems: 'center',
   },
   closeButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 10,
+    position: 'absolute',
+    top: 10,
+    right: 10,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
+    marginBottom: 15,
   },
   input: {
     height: 40,
-    borderColor: '#ddd',
+    borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
+    marginBottom: 10,
     paddingHorizontal: 10,
+    width: '100%',
+    borderRadius: 5,
+  },
+  errorText: {
+    color: 'red',
     marginBottom: 10,
   },
   datePickerButton: {
-    padding: 10,
-    borderRadius: 5,
-    borderColor: '#ddd',
-    borderWidth: 1,
     marginVertical: 10,
   },
   datePickerText: {
     fontSize: 16,
-    color: 'green',
+    color: '#007bff',
   },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginBottom: 10,
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    color: 'black',
+    paddingRight: 30,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
   },
 });
 

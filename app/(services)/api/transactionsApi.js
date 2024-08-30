@@ -107,11 +107,37 @@ const addTransaction = async (userId, transaction, token) => {
   );
   return response.data; 
 };
-
+//api call for use saving
 const useSaving = async (savingId) => {
   console.log("logged savingId: ",savingId);
   const response = await axios.put(
     `${baseURL}/saving/use/${savingId}`, 
+  );
+  return response.data; 
+};
+
+//api call for getting limits
+const getGoals = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/limits/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  );
+  return response.data; 
+};
+
+//api call for adding new limi
+const addGoal = async (userId, token) => {
+  const response = await axios.post(
+    `${baseURL}/limits/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
   );
   return response.data; 
 };
@@ -126,5 +152,7 @@ export {
   getSavings,
   getWeekReport,
   getMonthReport,
-  useSaving
+  useSaving,
+  getGoals,
+  addGoal
 };

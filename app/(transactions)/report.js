@@ -231,6 +231,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     alignItems: 'center',
+    marginBottom:3
   },
   transactionLeft: {
     flexDirection: 'row',

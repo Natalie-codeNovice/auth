@@ -15,7 +15,6 @@ export default function RootLayout() {
             ),
           }}
         />
-        {/* profile */}
 
         <Tabs.Screen
           name="saving"
@@ -37,6 +36,16 @@ export default function RootLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="goals"
+          options={{
+            headerShown:false,
+            title: "Goals",
+            tabBarIcon: ({ color }) => (
+              <FontAwesome size={28} name="graduation-cap" color={color} />
+            ),
+          }}
+        />        
       </Tabs>
     </ProtectedRoute>
   );

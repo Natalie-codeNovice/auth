@@ -1,2 +1,2 @@
-const URL = "https://better-teeth-bake.loca.lt";
+const URL = "https://upset-ways-know.loca.lt";
 export { URL };
