@@ -74,7 +74,7 @@ const Saving = () => {
       const netBalance = netBalanceResponse?.balance || 0;
 
       if (netBalance <= 0) {
-        Alert.alert("Error", "Add income first before creating a saving.");
+        Alert.alert("Netbalance not found!", "Add income first before creating a saving.");
         return;
       }
 
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 80,
     right: 20,
     backgroundColor: '#007bff',
     borderRadius: 50,
@@ -342,7 +342,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
     paddingHorizontal: 10,
-    width: '100%',
     borderRadius: 5,
   },
   errorText: {

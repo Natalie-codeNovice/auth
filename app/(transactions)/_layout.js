@@ -27,16 +27,6 @@ export default function RootLayout() {
           }}
         />
         <Tabs.Screen
-          name="report"
-          options={{
-            headerShown:false,
-            title: "Report",
-            tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="book" color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="goals"
           options={{
             headerShown:false,

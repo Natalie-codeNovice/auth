@@ -33,21 +33,24 @@ export default function Register() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Register</Text>
-      {mutation?.isError && (
+      {mutation.isError && (
         <Text style={styles.errorText}>
-          {mutation?.error?.response?.data?.message}
+          {mutation.error?.response?.data?.message || "Registration failed"}
+        </Text>
+      )}
+      {mutation.isSuccess && (
+        <Text style={styles.successText}>
+          Registration successful! Please check your email to verify your account.
         </Text>
       )}
       <Formik
         initialValues={{ username: "", email: "", password: "", confirmPassword: "", phoneNumber: "" }}
         validationSchema={RegisterSchema}
         onSubmit={(values) => {
-          mutation
-            .mutateAsync(values)
+          mutation.mutateAsync(values)
             .then((data) => {
-              console.log("data", data);
-              // Handle successful registration here
-              router.push("/auth/login"); // Redirect to login page
+              console.log("Registration data:", data);
+              // Show success message or redirect to a different page if needed
             })
             .catch((err) => {
               console.error("Registration error:", err);
@@ -169,6 +172,11 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     marginBottom: 16,
+  },
+  successText: {
+    color: "green",
+    marginBottom: 16,
+    textAlign: "center",
   },
   button: {
     height: 50,

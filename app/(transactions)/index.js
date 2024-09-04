@@ -7,8 +7,9 @@ import { getExpense, getIncome, getNetBalance, addTransaction } from '../(servic
 import { LinearGradient } from 'expo-linear-gradient';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { Picker } from '@react-native-picker/picker';
+
 // Validation schema with Yup
 const validationSchema = Yup.object().shape({
   description: Yup.string().required('Description is required'),
@@ -32,7 +33,6 @@ const expenseCategories = [
   { label: 'Healthcare', value: 'healthcare' },
   { label: 'Other', value: 'other' },
 ];
-
 
 const NewTransaction = () => {
   const queryClient = useQueryClient();
@@ -76,7 +76,14 @@ const NewTransaction = () => {
       if (newTransaction.type === 'expense' && newTransaction.amount > netBalanceData.balance) {
         throw new Error('Insufficient balance');
       }
-      await addTransaction(userId, newTransaction, token);
+      try {
+        await addTransaction(userId, newTransaction, token);
+      } catch (error) {
+        if (error.response && error.response.data) {
+          throw new Error(error.response.data.message || 'An error occurred');
+        }
+        throw new Error('An error occurred');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['income', userId, token]);
@@ -87,7 +94,6 @@ const NewTransaction = () => {
       setError(error.message || 'An error occurred');
     },
   });
-
 
   return (
     <View style={styles.container}>
@@ -153,7 +159,7 @@ const NewTransaction = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-                        <TouchableOpacity
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setModalVisible(false)}
             >
@@ -252,7 +258,6 @@ const NewTransaction = () => {
         </View>
       </Modal>
     </View>
-
   );
 };
 
@@ -355,8 +360,8 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 27,
-    width: '83%',
+    padding: 17,
+    width: '86%',
     alignItems: 'center',
   },
   modalTitle: {
@@ -426,5 +431,4 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 });
-
 export default NewTransaction;

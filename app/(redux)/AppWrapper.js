@@ -30,7 +30,7 @@ function AppWrapper() {
       <Stack.Screen name="report/month" options={{ title: "Back", headerShown: true }} /> 
       <Stack.Screen name="report/day" options={{ title: "Back", headerShown: true }} /> 
       <Stack.Screen name="report/custom" options={{ title: "Back", headerShown: true }} />      
-      <Stack.Screen name="history/index" options={{ title: "Back", headerShown: true }} />  
+      <Stack.Screen name="history/index" options={{ title: "Back", headerShown: false }} />  
 
 
       {/* bottom tab */}

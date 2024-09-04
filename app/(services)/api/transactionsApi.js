@@ -81,6 +81,19 @@ const getWeekReport = async (userId, token) => {
   return response.data;
 };
 
+// API call for fetching weekly report chart 
+const getWeekReportChart = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/week-chart/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  );
+  return response.data;
+};
+
 // API call for fetching monthly report
 const getMonthReport = async (userId, token) => {
   const response = await axios.get(
@@ -93,6 +106,60 @@ const getMonthReport = async (userId, token) => {
   ); 
   return response.data;
 };
+
+// API call for fetching monthly report line chart
+const getMonthReportChart = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/month-chart/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  ); 
+  return response.data;
+};
+
+// API call for fetching day report
+const getDayReport = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/day-report/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  ); 
+  return response.data;
+};
+
+// API call for fetching day report
+const getDaylyReport = async (userId, token) => {
+  const response = await axios.get(
+    `${baseURL}/dayly-report/${userId}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    }
+  ); 
+  return response.data;
+};
+
+// API call for fetching custom report
+const getCustomReport = async (userId, token, startDate, endDate) => {
+  const response = await axios.post(`${baseURL}/custom/${userId}`, {
+    startDate,
+    endDate,
+  }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+
 
 // API call for adding a transaction
 const addTransaction = async (userId, transaction, token) => {
@@ -130,9 +197,10 @@ const getGoals = async (userId, token) => {
 };
 
 //api call for adding new limi
-const addGoal = async (userId, token) => {
+const addGoal = async (userId, token, newGoal) => {
   const response = await axios.post(
     `${baseURL}/limits/${userId}`, 
+    newGoal,
     {
       headers: {
         Authorization: `Bearer ${token}`, 
@@ -154,5 +222,10 @@ export {
   getMonthReport,
   useSaving,
   getGoals,
-  addGoal
+  addGoal,
+  getDayReport,
+  getCustomReport,
+  getWeekReportChart,
+  getMonthReportChart,
+  getDaylyReport
 };

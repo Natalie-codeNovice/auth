@@ -1,220 +1,275 @@
-import React from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, ActivityIndicator, FlatList, RefreshControl, Text } from 'react-native';
 import { useSelector } from 'react-redux';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { getDayReport, getWeekReport, getMonthReport} from '../(services)/api/transactionsApi';
 import { useQuery } from '@tanstack/react-query';
-import { getRecentTransactions } from '../(services)/api/transactionsApi';
+import { Appbar } from 'react-native-paper';
+import { Menu, MenuTrigger, MenuOptions, MenuOption, MenuProvider } from 'react-native-popup-menu';
+import { LinearGradient } from 'expo-linear-gradient';
+import ProtectedRoute from "../components/ProtectedRoute";
 
-const Transactions = () => {
+const Report = () => {
+  const [isDay, setIsDay] = useState(false);
+  const [isWeek, setIsWeek] = useState(true);
+
   const token = useSelector(state => state.auth.token);
   const userId = useSelector(state => state.auth.user?.userId);
 
-  const { data: transactions = [], isLoading, isError, error } = useQuery({
-    queryKey: ['recentTransactions', userId],
-    queryFn: () => getRecentTransactions(userId, token),
-    enabled: !!userId && !!token, // Ensures the query only runs when userId and token are available
+  const reportQuery = useQuery({
+    queryKey: ['report', isDay, isWeek, userId],
+    queryFn: () => {
+      if (isDay) return getDayReport(userId, token);
+      if (isWeek) return getWeekReport(userId, token);
+      return getMonthReport(userId, token);
+    },
+    enabled: !!userId,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
   });
 
-  if (isLoading) {
-    return <ActivityIndicator size="large" color="#6200EE" />;
-  }
-
-  if (isError) {
-    console.error('Error fetching recent transactions:', error);
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Error loading transactions</Text>
-      </View>
-    );
-  }
-
-  const calculateTotals = () => {
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let totalSavings = 0;
-
-    transactions.forEach(transaction => {
-      const amount = parseFloat(transaction.amount);
-      if (transaction.type === 'income') {
-        totalIncome += amount;
-      } else if (transaction.type === 'expense') {
-        totalExpense += amount;
-      } else if (transaction.type === 'saving') {
-        totalSavings += amount;
-      }
-    });
-
-    return { totalIncome, totalExpense, totalSavings };
+  const handleMenuSelect = (value) => {
+    if (value === 'day') {
+      setIsDay(true);
+      setIsWeek(false);
+    } else if (value === 'week') {
+      setIsDay(false);
+      setIsWeek(true);
+    } else {
+      setIsDay(false);
+      setIsWeek(false);
+    }
+    reportQuery.refetch();
   };
 
-  const { totalIncome, totalExpense, totalSavings } = calculateTotals();
+  const renderTransactionItem = ({ item, index }) => {
+    if (!item) return null;
 
-  const renderItem = ({ item }) => {
-    const { description, amount, type, category, createdAt } = item;
+    // Define gradients based on transaction type
+    const typeGradients = {
+      expense: ['#FF4D4D', '#FF1A1A'], // Red gradient
+      income: ['#4CAF50', '#388E3C'], // Green gradient
+      saving: ['#2196F3', '#0D47A1'], // Blue gradient
+    };
+
+    // Determine the gradient based on the transaction type
+    const gradientColors = typeGradients[item.type] || ['#0066cc', '#0033cc']; // Default gradient if type is unknown
+
     return (
-      <View style={[styles.transactionContainer, styles[`type_${type}`]]}>
-        <View style={styles.iconContainer}>
-          <FontAwesome
-            name={type === 'income' ? 'arrow-circle-up' : type === 'expense' ? 'arrow-circle-down' : 'bank'}
-            size={24}
-            color="white"
-          />
-        </View>
-        <View style={styles.transactionDetails}>
-          <Text style={styles.transactionDescription}>{description}</Text>
-          <Text style={styles.transactionCategory}>{category}</Text>
+      
+      <View style={styles.transactionItem}>
+        <View style={styles.transactionLeft}>
+          <LinearGradient
+            colors={gradientColors}
+            style={styles.numberCircle}
+          >
+            <Text style={styles.transactionNumber}>{index + 1}</Text>
+          </LinearGradient>
+          <View style={styles.transactionDetails}>
+            <Text style={styles.transactionText}>{item.description || 'N/A'}</Text>
+            <Text style={styles.transactionType}>{item.type || 'N/A'}</Text>
+          </View>
         </View>
         <View style={styles.transactionRight}>
-          <Text style={styles.transactionAmount}>
-            {parseFloat(amount)}Rwf
-          </Text>
-          <Text style={styles.transactionDate}>{new Date(createdAt).toLocaleDateString()}</Text>
+          <Text style={styles.transactionAmount}>{item.amount || '0.00'} RWF</Text>
+          <Text style={styles.transactionDate}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</Text>
         </View>
       </View>
     );
   };
 
+  if (reportQuery.isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0066cc" />
+      </View>
+    );
+  }
+
+  if (reportQuery.isError) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>{reportQuery.error.message}</Text>
+      </View>
+    );
+  }
+
+  const reportData = reportQuery.data || {};
+  const transactions = reportData.transactions || [];
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <View style={styles.dashboard}>
-        <View style={[styles.card, styles.incomeCard]}>
-          <FontAwesome name="arrow-circle-up" size={30} color="white" />
-          <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Income</Text>
-            <Text style={styles.cardAmount}>{totalIncome}</Text>
-            <Text style={styles.currency}>RWF</Text>
-
+    <ProtectedRoute>
+    <MenuProvider>
+      <View style={styles.container}>
+        <Appbar.Header>
+          <Appbar.Content title="Report" />
+          <Menu>
+            <MenuTrigger>
+              <Appbar.Action icon="dots-vertical" />
+            </MenuTrigger>
+            <MenuOptions>
+              <MenuOption onSelect={() => handleMenuSelect('day')}>
+                <Text>Day Report</Text>
+              </MenuOption>
+              <MenuOption onSelect={() => handleMenuSelect('week')}>
+                <Text>Week Report</Text>
+              </MenuOption>
+              <MenuOption onSelect={() => handleMenuSelect('month')}>
+                <Text>Month Report</Text>
+              </MenuOption>
+            </MenuOptions>
+          </Menu>
+        </Appbar.Header>
+        <View style={styles.reportContainer}>
+          <View style={styles.netBalanceContainer}>
+            <LinearGradient
+              colors={['#990f87', '#0072ff']} // gradient colors
+              style={styles.netBalanceCircle}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Text style={styles.netBalanceText}>{reportData.netBalance || '0.00'} RWF</Text>
+            </LinearGradient>
+            <Text style={styles.reportTitle}>{isDay ? 'Day Report' : isWeek ? 'Week Report' : 'Month Report'}</Text>
           </View>
-        </View>
-
-        <View style={[styles.card, styles.expenseCard]}>
-          <FontAwesome name="arrow-circle-down" size={30} color="white" />
-          <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Expenses</Text>
-            <Text style={styles.cardAmount}>{totalExpense}</Text>
-            <Text style={styles.currency}>RWF</Text>
-
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Income</Text>
+              <Text style={styles.summaryValue}>{reportData.totalIncome || '0.00'} RWF</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Savings</Text>
+              <Text style={styles.summaryValue}>{reportData.totalSavings || '0.00'} RWF</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Expenses</Text>
+              <Text style={styles.summaryValue}>{reportData.totalExpenses || '0.00'} RWF</Text>
+            </View>
           </View>
-        </View>
-
-        <View style={[styles.card, styles.savingsCard]}>
-          <FontAwesome name="bank" size={30} color="white" />
-          <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Savings</Text>
-            <Text style={styles.cardAmount}>{totalSavings}</Text>
-            <Text style={styles.currency}>RWF</Text>
-          </View>
+          <FlatList
+            data={transactions}
+            renderItem={renderTransactionItem}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={styles.transactionList}
+            refreshControl={
+              <RefreshControl
+                refreshing={reportQuery.isRefetching}
+                onRefresh={() => reportQuery.refetch()}
+              />
+            }
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+          />
         </View>
       </View>
-      <Text style={styles.title}>Transactions History</Text>
-      <FlatList
-        data={transactions}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-      />
-    </View>
+    </MenuProvider>
+  </ProtectedRoute>
   );
 };
 
-export default Transactions;
+export default Report;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#f5f5f5',
+  },
+  reportContainer: {
+    flex: 1,
     padding: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  dashboard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  netBalanceContainer: {
+    alignItems: 'center',
     marginBottom: 20,
   },
-  card: {
-    flex: 1,
-    borderRadius: 10,
-    padding: 15,
-    margin: 5,
+  netBalanceCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    minHeight: 100, // Ensures card height is consistent
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  incomeCard: {
-    backgroundColor: 'green',
+  netBalanceText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
-  expenseCard: {
-    backgroundColor: 'red',
-  },
-  savingsCard: {
-    backgroundColor: 'blue',
-  },
-  cardContent: {
-    alignItems: 'center',
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginTop: 10,
   },
-  cardTitle: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  cardAmount: {
-    fontSize: 20,
-    color: 'white',
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  currency: {
-    fontSize: 16,
-    color: 'white',
-    marginTop: 5,
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  transactionContainer: {
+  summaryContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
+    justifyContent: 'space-between',
     marginBottom: 20,
+  },
+  summaryCard: {
+    flex: 1,
+    marginHorizontal: 5,
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  iconContainer: {
-    backgroundColor: '#6200EE',
-    padding: 10,
-    borderRadius: 50,
-    marginRight: 15,
-  },
-  transactionDetails: {
-    flex: 1,
-  },
-  transactionDescription: {
+  summaryTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
-  transactionCategory: {
+  summaryValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  transactionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  transactionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  numberCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  transactionNumber: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  transactionDetails: {
+    marginLeft: 10,
+  },
+  transactionText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  transactionType: {
     fontSize: 14,
-    color: '#888',
-    marginTop: 2,
+    color: '#777',
   },
   transactionRight: {
     alignItems: 'flex-end',
@@ -222,32 +277,18 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
   },
   transactionDate: {
-    fontSize: 12,
-    color: '#aaa',
-    marginTop: 4,
+    fontSize: 14,
+    color: '#777',
   },
-  type_income: {
-    borderLeftColor: 'green',
-    borderLeftWidth: 4,
+  separator: {
+    height: 1,
+    backgroundColor: '#ddd',
   },
-  type_expense: {
-    borderLeftColor: 'red',
-    borderLeftWidth: 4,
-  },
-  type_saving: {
-    borderLeftColor: 'blue',
-    borderLeftWidth: 4,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
+  error: {
     color: 'red',
-    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

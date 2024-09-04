@@ -1,232 +1,299 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Dimensions, Button, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Dimensions, ScrollView, Modal, TouchableOpacity } from 'react-native';
 import { LineChart, PieChart } from 'react-native-chart-kit';
+import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux'; 
+import { getWeekReportChart } from '../(services)/api/transactionsApi';
+import { Card, Button } from 'react-native-paper';
+
+const generateColorPalette = (numColors) => {
+  const colors = [];
+  for (let i = 0; i < numColors; i++) {
+    const hue = i * (360 / numColors);
+    colors.push(`hsl(${hue}, 70%, 60%)`);
+  }
+  return colors;
+};
 
 const Week = () => {
-  // Sample data for the week
-  const incomeData = [150, 200, 250, 180, 300, 400, 320];
-  const expenseData = [100, 150, 200, 170, 250, 350, 300];
-  const savingData = [50, 50, 50, 10, 50, 50, 20];
+  const token = useSelector(state => state.auth.token); 
+  const userId = useSelector(state => state.auth.user?.userId);
+  const [selectedPoint, setSelectedPoint] = useState(null);
 
-  const incomeCategories = [
-    { name: 'Salary', amount: 600, color: '#4CAF50' },
-    { name: 'Freelancing', amount: 400, color: '#8BC34A' },
-    { name: 'Investments', amount: 300, color: '#CDDC39' },
-  ];
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['weekReport', userId],
+    queryFn: () => getWeekReportChart(userId, token),
+  });
 
-  const expenseCategories = [
-    { name: 'Rent', amount: 500, color: '#FF5252' },
-    { name: 'Groceries', amount: 300, color: '#FF7043' },
-    { name: 'Entertainment', amount: 150, color: '#FF9800' },
-  ];
-
-  const savingCategories = [
-    { name: 'Emergency Fund', amount: 300, color: '#2196F3' },
-    { name: 'Retirement', amount: 200, color: '#03A9F4' },
-    { name: 'Vacation', amount: 100, color: '#00BCD4' },
-  ];
-
-  const [selectedCategory, setSelectedCategory] = useState('income');
-
-  const getCategoryData = () => {
-    switch (selectedCategory) {
-      case 'income':
-        return incomeCategories;
-      case 'expenses':
-        return expenseCategories;
-      case 'savings':
-        return savingCategories;
-      default:
-        return [];
-    }
-  };
-
-  // Calculate totals
-  const totalIncome = incomeData.reduce((a, b) => a + b, 0);
-  const totalExpenses = expenseData.reduce((a, b) => a + b, 0);
-  const totalSavings = savingData.reduce((a, b) => a + b, 0);
-
-  // Decision summary
-  let decisionSummary;
-  if (totalExpenses > totalIncome) {
-    decisionSummary = 'You have spent more than you earned. Consider cutting down your expenses.';
-  } else if (totalSavings < (totalIncome * 0.1)) {
-    decisionSummary = 'Your savings are low. Try to save at least 10% of your income.';
-  } else {
-    decisionSummary = 'You are managing your finances well. Keep it up!';
+  if (isLoading) {
+    return <Text style={styles.loadingText}>Loading...</Text>;
   }
 
+  if (error) {
+    return <Text style={styles.errorText}>Error loading data</Text>;
+  }
+
+  const labels = data.dailyBreakdown.map(day => new Date(day.day).toLocaleDateString('en-US', { weekday: 'short' }));
+  const incomeData = data.dailyBreakdown.map(day => day.totalIncome);
+  const savingsData = data.dailyBreakdown.map(day => day.totalSavings);
+  const expensesData = data.dailyBreakdown.map(day => day.totalExpenses);
+
+  const totalIncome = incomeData.reduce((acc, cur) => acc + cur, 0);
+  const totalSavings = savingsData.reduce((acc, cur) => acc + cur, 0);
+  const totalExpenses = expensesData.reduce((acc, cur) => acc + cur, 0);
+
+  const handleDataPointClick = (dataPoint) => {
+    const selectedDayData = {
+      day: labels[dataPoint.index],
+      totalIncome: incomeData[dataPoint.index],
+      totalSavings: savingsData[dataPoint.index],
+      totalExpenses: expensesData[dataPoint.index],
+    };
+
+    const advice = generateAdvice(selectedDayData);
+    setSelectedPoint({ ...selectedDayData, advice });
+  };
+
+  const generateAdvice = ({ totalIncome, totalSavings, totalExpenses }) => {
+    let advice = "Good job! Keep monitoring your finances.";
+    
+    if (totalExpenses > totalIncome) {
+      advice = "Your expenses exceeded your income. Consider reducing unnecessary spending.";
+    } else if (totalSavings === 0) {
+      advice = "No savings were recorded. Try to save a portion of your income.";
+    } else if (totalIncome > totalExpenses && totalSavings > 0) {
+      advice = "Great work! You've saved some money. Consider investing it.";
+    } else if (totalIncome > 0 && totalExpenses === 0) {
+      advice = "You had a surplus of income today. This could be a good opportunity to save or invest.";
+    }
+
+    return advice;
+  };
+
+  const incomeCategories = Object.entries(data.categoryBreakdown.income || {}).map(([category, amount]) => ({
+    name: category,
+    amount,
+    color: generateColorPalette(Object.keys(data.categoryBreakdown.income || {}).length)[Object.keys(data.categoryBreakdown.income || {}).indexOf(category)],
+    legendFontColor: '#000000',
+    legendFontSize: 14
+  }));
+
+  const expenseCategories = Object.entries(data.categoryBreakdown.expenses || {}).map(([category, amount]) => ({
+    name: category,
+    amount,
+    color: generateColorPalette(Object.keys(data.categoryBreakdown.expenses || {}).length)[Object.keys(data.categoryBreakdown.expenses || {}).indexOf(category)],
+    legendFontColor: '#000000',
+    legendFontSize: 14
+  }));
+
+  const savingsCategories = Object.entries(data.categoryBreakdown.savings || {}).map(([category, amount]) => ({
+    name: category,
+    amount,
+    color: generateColorPalette(Object.keys(data.categoryBreakdown.savings || {}).length)[Object.keys(data.categoryBreakdown.savings || {}).indexOf(category)],
+    legendFontColor: '#000000',
+    legendFontSize: 14
+  }));
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Weekly Financial Report</Text>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Weekly Report</Text>
 
-      {/* Buttons to switch between charts */}
-      <View style={styles.switchContainer}>
-        <Button title="Income" onPress={() => setSelectedCategory('income')} />
-        <Button title="Expenses" onPress={() => setSelectedCategory('expenses')} />
-        <Button title="Savings" onPress={() => setSelectedCategory('savings')} />
-      </View>
+        {/* Overview Section */}
+        <Card style={styles.overviewCard}>
+          <Card.Content>
+            <Text style={styles.overviewTitle}>Overview</Text>
+            <Text style={styles.overviewText}>Total Income: {totalIncome.toFixed(2)} RWF</Text>
+            <Text style={styles.overviewText}>Total Savings: {totalSavings.toFixed(2)} RWF</Text>
+            <Text style={styles.overviewText}>Total Expenses: {totalExpenses.toFixed(2)} RWF</Text>
+          </Card.Content>
+        </Card>
 
-      {/* Pie Chart Section */}
-      <PieChart
-        data={getCategoryData().map((item) => ({
-          name: item.name,
-          population: item.amount,
-          color: item.color,
-          legendFontColor: '#7F7F7F',
-          legendFontSize: 15,
-        }))}
-        width={Dimensions.get('window').width - 30}
-        height={220}
-        chartConfig={{
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        }}
-        accessor={'population'}
-        backgroundColor={'transparent'}
-        paddingLeft={'15'}
-        absolute
-      />
+        {/* Line Chart */}
+        <LineChart
+          data={{
+            labels: labels,
+            datasets: [
+              {
+                data: incomeData,
+                color: (opacity = 1) => `rgba(0, 255, 0, ${opacity})`,
+                strokeWidth: 2,
+              },
+              {
+                data: savingsData,
+                color: (opacity = 1) => `rgba(0, 0, 255, ${opacity})`,
+                strokeWidth: 2,
+              },
+              {
+                data: expensesData,
+                color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`,
+                strokeWidth: 2,
+              },
+            ],
+            legend: ['Income', 'Savings', 'Expenses'],
+          }}
+          width={Dimensions.get('window').width - 16}
+          height={220}
+          chartConfig={{
+            backgroundColor: '#ffffff',
+            backgroundGradientFrom: '#ffffff',
+            backgroundGradientTo: '#ffffff',
+            decimalPlaces: 2,
+            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          }}
+          style={styles.chart}
+          onDataPointClick={handleDataPointClick}
+        />
 
-      <LineChart
-        data={{
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          datasets: [
-            {
-              data: incomeData, // Income data
-              color: () => '#4CAF50', // Green color for income
-              strokeWidth: 2,
-            },
-            {
-              data: expenseData, // Expenses data
-              color: () => '#FF5252', // Red color for expenses
-              strokeWidth: 2,
-            },
-            {
-              data: savingData, // Savings data
-              color: () => '#2196F3', // Blue color for savings
-              strokeWidth: 2,
-            },
-          ],
-        }}
-        width={Dimensions.get('window').width - 30} // Width of the chart
-        height={220} // Height of the chart
-        yAxisLabel="$"
-        yAxisSuffix="k"
-        yAxisInterval={1} // Optional, can set to 1 for easier steps
-        chartConfig={{
-          backgroundColor: '#f5f5f5',
-          backgroundGradientFrom: '#fb8c00',
-          backgroundGradientTo: '#ffa726',
-          decimalPlaces: 2, // Number of decimal places to display
-          color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          style: {
-            borderRadius: 16,
-          },
-          propsForDots: {
-            r: '6',
-            strokeWidth: '2',
-            stroke: '#ffa726',
-          },
-        }}
-        bezier
-        style={{
-          marginVertical: 8,
-          borderRadius: 16,
-        }}
-      />
+        {/* Pie Charts */}
+        <View style={styles.pieChartContainer}>
+          <Text style={styles.subtitle}>Income Breakdown</Text>
+          <PieChart
+            data={incomeCategories}
+            width={Dimensions.get('window').width - 30}
+            height={220}
+            chartConfig={{
+              color: (opacity = 1) => `rgba(0, 255, 0, ${opacity})`
+            }}
+            accessor="amount"
+            backgroundColor="transparent"
+            paddingLeft="15"
+            absolute
+          />
 
-      {/* Legend Section */}
-      <View style={styles.legendContainer}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColorBox, { backgroundColor: '#4CAF50' }]} />
-          <Text style={styles.legendText}>Income</Text>
+          <Text style={styles.subtitle}>Expense Breakdown</Text>
+          <PieChart
+            data={expenseCategories}
+            width={Dimensions.get('window').width - 30}
+            height={220}
+            chartConfig={{
+              color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`
+            }}
+            accessor="amount"
+            backgroundColor="transparent"
+            paddingLeft="15"
+            absolute
+          />
+
+          <Text style={styles.subtitle}>Savings Breakdown</Text>
+          <PieChart
+            data={savingsCategories}
+            width={Dimensions.get('window').width - 30}
+            height={220}
+            chartConfig={{
+              color: (opacity = 1) => `rgba(0, 0, 255, ${opacity})`
+            }}
+            accessor="amount"
+            backgroundColor="transparent"
+            paddingLeft="15"
+            absolute
+          />
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColorBox, { backgroundColor: '#FF5252' }]} />
-          <Text style={styles.legendText}>Expenses</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColorBox, { backgroundColor: '#2196F3' }]} />
-          <Text style={styles.legendText}>Savings</Text>
-        </View>
-      </View>
 
-      <View style={styles.overviewContainer}>
-        <Text style={styles.overviewHeader}>Week Overview</Text>
-        <Text style={styles.overviewText}>Total Income: ${totalIncome.toFixed(2)}k</Text>
-        <Text style={styles.overviewText}>Total Expenses: ${totalExpenses.toFixed(2)}k</Text>
-        <Text style={styles.overviewText}>Total Savings: ${totalSavings.toFixed(2)}k</Text>
-        <Text style={styles.summary}>{decisionSummary}</Text>
+        {/* Modal for Data Point Details */}
+        <Modal
+          transparent={true}
+          visible={!!selectedPoint}
+          onRequestClose={() => setSelectedPoint(null)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              {selectedPoint && (
+                <>
+                  <Text style={styles.modalTitle}>Details for {selectedPoint.day}</Text>
+                  <Text style={styles.modalText}>Total Income: {selectedPoint.totalIncome.toFixed(2)} RWF</Text>
+                  <Text style={styles.modalText}>Total Savings: {selectedPoint.totalSavings.toFixed(2)} RWF</Text>
+                  <Text style={styles.modalText}>Total Expenses: {selectedPoint.totalExpenses.toFixed(2)} RWF</Text>
+                  <Text style={styles.modalAdvice}>{selectedPoint.advice}</Text>
+                  <Button mode="contained" onPress={() => setSelectedPoint(null)}>Close</Button>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
       </View>
     </ScrollView>
   );
 };
 
-export default Week;
-
 const styles = StyleSheet.create({
-  container: {
+  scrollContainer: {
     flexGrow: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
+    padding: 16,
   },
-  header: {
-    fontSize: 20,
-    marginBottom: 10,
+  container: {
+    flex: 1,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    marginBottom: 16,
   },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
-    width: '90%',
+  overviewCard: {
+    marginBottom: 16,
   },
-  legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
-    width: '90%',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  legendColorBox: {
-    width: 15,
-    height: 15,
-    marginRight: 5,
-    borderRadius: 3,
-  },
-  legendText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  overviewContainer: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    width: '90%',
-  },
-  overviewHeader: {
+  overviewTitle: {
     fontSize: 18,
-    marginBottom: 10,
     fontWeight: 'bold',
-    color: '#333',
   },
   overviewText: {
     fontSize: 16,
-    marginBottom: 5,
-    color: '#555',
+    marginVertical: 4,
   },
-  summary: {
-    marginTop: 10,
+  chart: {
+    marginVertical: 8,
+  },
+  pieChartContainer: {
+    marginVertical: 16,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  modalText: {
+    fontSize: 16,
+    marginVertical: 4,
+  },
+  modalAdvice: {
     fontSize: 16,
     fontStyle: 'italic',
-    color: '#00796B',
+    color: '#ff6347',
+    marginVertical: 8,
+  },
+  loadingText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: 'red',
+    textAlign: 'center',
+    marginVertical: 20,
   },
 });
+
+export default Week;
