@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { userLogout } from "../(services)/api/api";
 
 // Function to load user from AsyncStorage
 const loadUserFromStorage = async () => {
@@ -75,3 +76,4 @@ export const loadUser = () => async (dispatch) => {
     dispatch(setLoading(false));
   }
 };
+

@@ -1,2 +1,2 @@
-const URL = "https://tender-birds-pay.loca.lt";
+const URL = "https://finance-zgvt.onrender.com";
 export { URL };

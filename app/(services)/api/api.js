@@ -88,4 +88,19 @@ const forgotPassword = async ({ email }) => {
   return response.data;
 };
 
-export { loginUser, registerUser, updateUser, updatePassword, deleteUser, getUser,forgotPassword };
+// logout
+const userLogout = async ({ userId, token }) => {
+  const response = await axios.post(
+    `${baseURL}/logout/${userId}`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};
+
+
+export { loginUser, registerUser, updateUser, updatePassword, deleteUser, getUser,forgotPassword,userLogout };

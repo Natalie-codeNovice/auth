@@ -79,7 +79,7 @@ const Report = () => {
 
   if (reportQuery.isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.isLoading}>
         <ActivityIndicator size="large" color="#0066cc" />
       </View>
     );
@@ -290,5 +290,8 @@ const styles = StyleSheet.create({
     color: 'red',
     textAlign: 'center',
     marginTop: 20,
+  },
+  isLoading: {
+    top: '50%',
   },
 });

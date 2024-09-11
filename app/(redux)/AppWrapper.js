@@ -1,10 +1,7 @@
 import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
-
 import { Stack } from "expo-router/stack";
 import { loadUser } from "./authSlice";
-import ProtectedRoute from "../components/ProtectedRoute";
-
 function AppWrapper() {
   const dispatch = useDispatch();
 
@@ -23,6 +20,7 @@ function AppWrapper() {
       <Stack.Screen name="user/changePassword" options={{ title: "Change Password", headerShown: true }} />  
       <Stack.Screen name="user/changePhone" options={{ title: "Change Number", headerShown: true }} />  
       <Stack.Screen name="user/changeUsername" options={{ title: "Change Username", headerShown: true }} /> 
+      <Stack.Screen name="user/help" options={{ title: "Help", headerShown: true }} /> 
        
       {/* report  */}
       <Stack.Screen name="report/index" options={{ title: "Back", headerShown: true }} />  

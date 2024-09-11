@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -106,8 +107,13 @@ export default function Login() {
               <TouchableOpacity
                 style={styles.button}
                 onPress={handleSubmit}
+                disabled={forgotPasswordMutation.isLoading}
               >
-                <Text style={styles.buttonText}>Submit</Text>
+                {forgotPasswordMutation.isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Submit</Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setForgotPassword(false)}
@@ -120,7 +126,7 @@ export default function Login() {
         </Formik>
       ) : (
         <Formik
-          initialValues={{ username: "amelie", password: "123456" }}
+          initialValues={{ username: "paccy", password: "123456" }}
           validationSchema={LoginSchema}
           onSubmit={(values) => {
             loginMutation
@@ -168,8 +174,13 @@ export default function Login() {
               <TouchableOpacity
                 style={styles.button}
                 onPress={handleSubmit}
+                disabled={loginMutation.isLoading} // Disable button while loading
               >
-                <Text style={styles.buttonText}>Login</Text>
+                {loginMutation.isLoading ? ( // Show loading spinner or change button text
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Login</Text>
+                )}
               </TouchableOpacity>
               <View style={styles.loginPrompt}>
                 <Text style={styles.loginPromptText}>Don't you have an account?</Text>

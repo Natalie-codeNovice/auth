@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Text, Image, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useSelector } from "react-redux";
 import { getUser } from "../(services)/api/api";
-import { getNetBalance} from "../(services)/api/transactionsApi";
+import { getNetBalance } from "../(services)/api/transactionsApi";
 import { FontAwesome } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -54,7 +54,7 @@ export default function Profile() {
   }
 
   const renderProfileHeader = () => (
-    <LinearGradient colors={['#347deb', '#c334eb']} style={styles.gradientBackground}>
+    <LinearGradient colors={['#0062ff', '#33ccff']} style={styles.gradientBackground}>
       <View style={styles.profileContainer}>
         <Image
           source={{ uri: user?.profilePicture || 'https://via.placeholder.com/150' }} // Placeholder image
@@ -63,9 +63,10 @@ export default function Profile() {
         <Text style={styles.username}>{user?.username}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         <Text style={styles.phoneNumber}>{user?.phoneNumber}</Text>
-        <View style={styles.balanceContainer}>
-          <FontAwesome name="money" size={24} color="#fff" />
-          <Text style={styles.balance}>{netBalance.balance || '0.00'}Rwf</Text>
+
+        <View style={styles.balanceCard}>
+          <FontAwesome name="money" size={32} color="#fff" />
+          <Text style={styles.balanceText}>{netBalance.balance || '0.00'} RWF</Text>
         </View>
       </View>
     </LinearGradient>
@@ -74,11 +75,7 @@ export default function Profile() {
   return (
     <View style={styles.container}>
       <FlatList
-        ListHeaderComponent={
-          <>
-            {renderProfileHeader()}
-          </>
-        }
+        ListHeaderComponent={renderProfileHeader}
       />
     </View>
   );
@@ -87,70 +84,72 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  listContainer: {
-    flexGrow: 1,
+    backgroundColor: "#f2f2f2",
   },
   gradientBackground: {
-    padding: 16,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    marginBottom: 16,
+    padding: 20,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    marginBottom: 20,
   },
   profileContainer: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     marginBottom: 16,
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   username: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "bold",
     color: "#fff",
+    marginBottom: 4,
   },
   email: {
-    fontSize: 18,
-    color: "#fff",
+    fontSize: 16,
+    color: "#f0f0f0",
+    marginBottom: 4,
   },
   phoneNumber: {
-    fontSize: 18,
-    color: "#fff",
+    fontSize: 16,
+    color: "#f0f0f0",
+    marginBottom: 16,
   },
-  balanceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  balanceCard: {
+    backgroundColor: '#009688',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 10,
   },
-  balance: {
+  balanceText: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     color: "#fff",
-    marginLeft: 8,
-  },
-  errorText: {
-    fontSize: 18,
-    color: 'red',
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#333',
-    textAlign: 'center',
-    marginTop: 20,
+    marginLeft: 10,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 18,
+    color: 'red',
+    textAlign: 'center',
   },
 });

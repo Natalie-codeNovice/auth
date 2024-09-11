@@ -4,7 +4,7 @@ import { LineChart, PieChart } from 'react-native-chart-kit';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { getMonthReportChart } from '../(services)/api/transactionsApi';
-import { Card, Button } from 'react-native-paper';
+import { Card, Button, ActivityIndicator } from 'react-native-paper';
 
 // Function to generate distinct colors for categories
 const generateColorPalette = (numColors) => {
@@ -28,7 +28,9 @@ const Month = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   if (isLoading) {
-    return <Text style={styles.loadingText}>Loading...</Text>;
+    return(<View style={styles.isLoading}>
+      <ActivityIndicator size="large" color="#0066cc" />
+    </View>);
   }
 
   if (error) {
@@ -297,6 +299,9 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 10,
+  },
+  isLoading: {
+    top: '50%',
   },
 });
 

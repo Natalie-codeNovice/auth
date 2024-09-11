@@ -138,7 +138,7 @@ const NewTransaction = () => {
           <View style={styles.transactionItem}>
             <Text style={styles.transactionDescription}>{item.description}</Text>
             <Text style={styles.transactionAmount}>
-              {transactionType === 'income' ? `+${item.amount}` : `${item.amount}`}Rwf
+              {transactionType === 'income' ? `+${item.amount}` : `-${item.amount}`}Rwf
             </Text>
           </View>
         )}

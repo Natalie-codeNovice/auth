@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -39,9 +40,11 @@ export default function Register() {
         </Text>
       )}
       {mutation.isSuccess && (
-        <Text style={styles.successText}>
-          Registration successful! Please check your email to verify your account.
-        </Text>
+      Alert.alert(
+        'Success',
+        'Registration successful! Please check your email to verify your account.',
+        [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+      )
       )}
       <Formik
         initialValues={{ username: "", email: "", password: "", confirmPassword: "", phoneNumber: "" }}

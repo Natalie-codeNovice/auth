@@ -2,23 +2,32 @@ import React from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useDispatch, useSelector } from "react-redux";
-import { logoutAction } from "../(redux)/authSlice";
 import { useRouter } from "expo-router";
 import { deleteUser } from "../(services)/api/api";
+import { useLogout } from "../(services)/hooks/useLogout";
+import { logoutAction } from "../(redux)/authSlice";
 
 const Settings = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const user = useSelector((state) => state.auth.user) || {};
   const token = useSelector((state) => state.auth.token);
+  
+  // Initialize the useLogout hook
+  const { mutate: logout, isLoading: isLoggingOut } = useLogout();
 
   const handleEmailChange = () => {
     router.push("/user/changeEmail");
   };
+  
   const handleUsernameChange = () => {
     router.push("/user/changeUsername");
   };
-
+  
+  const handleHelp = () => {
+    router.push("/user/help");
+  };
+  
   const handleChangeNumber = () => {
     router.push("/user/changePhone");
   };
@@ -59,8 +68,19 @@ const Settings = () => {
   };
 
   const handleLogout = () => {
-    dispatch(logoutAction());
-    router.push("/auth/login");
+    if (user.userId && token) {
+      logout({ userId: user.userId, token }, {
+        onSuccess: () => {
+          dispatch(logoutAction()); // Clear Redux state
+          router.push("/auth/login");
+        },
+        onError: (error) => {
+          console.error('Error during logout:', error);
+        },
+      });
+    } else {
+      Alert.alert('Error', 'User or token information is missing.');
+    }
   };
 
   return (
@@ -82,7 +102,7 @@ const Settings = () => {
           <Icon name="envelope" size={24} color="#4caf50" />
           <Text style={styles.optionText}>Email Address</Text>
           <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />
-        </TouchableOpacity>        
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.option}
           onPress={handleChangeNumber}
@@ -107,7 +127,15 @@ const Settings = () => {
           <Text style={styles.optionText}>Delete Account</Text>
           <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.option} onPress={handleLogout}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={handleHelp}
+        >
+          <Icon name="info-circle" size={24} color="#3f51b5" />
+          <Text style={styles.optionText}>Help</Text>
+          <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.option} onPress={handleLogout} disabled={isLoggingOut}>
           <Icon name="sign-out" size={24} color="#e91e63" />
           <Text style={styles.optionText}>Logout</Text>
           <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />

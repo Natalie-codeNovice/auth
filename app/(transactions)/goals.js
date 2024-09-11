@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, FlatList, Alert, Modal, TouchableOpacity, RefreshControl, Platform, TextInput, Button } from 'react-native';
+import { StyleSheet, Text, View, FlatList, Alert, Modal, TouchableOpacity, RefreshControl, Platform, TextInput, Button, ActivityIndicator } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { FontAwesome } from '@expo/vector-icons';
@@ -86,7 +86,10 @@ const Goals = () => {
     formik.setFieldValue('endingDate', currentDate);
   };
 
-  if (isLoading) return <Text>Loading...</Text>;
+  if (isLoading)     
+  return(<View style={styles.isLoading}>
+    <ActivityIndicator size="large" color="#0066cc" />
+  </View>);
 
   const renderGoalItem = ({ item, index }) => (
     <View style={styles.goalCard}>
@@ -395,6 +398,9 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
   },
+  isLoading: {
+    top:'50%',
+  }
 });
 
 export default Goals;
