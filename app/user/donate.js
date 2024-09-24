@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -30,7 +30,7 @@ const DonateSchema = Yup.object().shape({
 
 export default function Donate() {
   const [modalVisible, setModalVisible] = useState(false);
-  const scaleValue = new Animated.Value(1);  // For heart pump animation
+  const scaleValue = new Animated.Value(1);
 
   const donationMutation = useMutation({
     mutationFn: donateAPI,
@@ -44,25 +44,24 @@ export default function Donate() {
     },
   });
 
-  // Heart pump animation loop
   const startPumping = () => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(scaleValue, {
-          toValue: 1.3, // Slightly larger size
-          duration: 600,
+          toValue: 1.2,
+          duration: 500,
           useNativeDriver: true,
         }),
         Animated.timing(scaleValue, {
-          toValue: 1, // Back to normal size
-          duration: 600,
+          toValue: 1,
+          duration: 500,
           useNativeDriver: true,
         }),
       ])
     ).start();
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     startPumping();
   }, []);
 

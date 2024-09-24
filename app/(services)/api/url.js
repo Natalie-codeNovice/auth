@@ -1,2 +1,3 @@
 const URL = "https://finance-zgvt.onrender.com";
-export { URL };
+const paymentUrl = "https://momo-1lyf.onrender.com";
+export { URL,paymentUrl };

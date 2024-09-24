@@ -98,7 +98,7 @@ const NewTransaction = () => {
   return (
     <View style={styles.container}>
       <View style={styles.balanceCard}>
-        <Text style={styles.balanceText}>Net Balance</Text>
+        <Text style={styles.balanceText}>My Balance</Text>
         <Text style={styles.amountText}>{netBalanceData?.balance || '0.00'}Rwf</Text>
         <View style={styles.incomeExpenseRow}>
           <View style={styles.incomeContainer}>

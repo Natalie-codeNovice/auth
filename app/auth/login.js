@@ -5,8 +5,8 @@ import {
   TextInput,
   Text,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -16,16 +16,16 @@ import { loginAction } from "../(redux)/authSlice";
 import { useDispatch } from "react-redux";
 import { loginUser, forgotPassword as forgotPasswordAPI } from "../(services)/api/api";
 
-
 const LoginSchema = Yup.object().shape({
   username: Yup.string().required("Username is required"),
-  password: Yup.string().min(6, "Too Short!").required("Required"),
+  password: Yup.string().min(3, "Too Short!").required("Required"),
 });
 
 export default function Login() {
   const router = useRouter();
   const dispatch = useDispatch();
   const [forgotPassword, setForgotPassword] = useState(false);
+  const [loading, setLoading] = useState(false); // Added loading state
 
   const loginMutation = useMutation({
     mutationFn: loginUser,
@@ -39,7 +39,7 @@ export default function Login() {
 
   const handleForgotPassword = (email) => {
     forgotPasswordMutation.mutate(
-      { email }, // Send the email as an object
+      { email },
       {
         onSuccess: () => {
           Alert.alert(
@@ -126,9 +126,10 @@ export default function Login() {
         </Formik>
       ) : (
         <Formik
-          initialValues={{ username: "paccy", password: "123456" }}
+          initialValues={{ username: "", password: "" }}
           validationSchema={LoginSchema}
           onSubmit={(values) => {
+            setLoading(true); // Set loading to true when login starts
             loginMutation
               .mutateAsync(values)
               .then((data) => {
@@ -137,6 +138,9 @@ export default function Login() {
               })
               .catch((err) => {
                 console.error("Login error:", err);
+              })
+              .finally(() => {
+                setLoading(false); // Set loading to false when login completes
               });
           }}
         >
@@ -174,10 +178,10 @@ export default function Login() {
               <TouchableOpacity
                 style={styles.button}
                 onPress={handleSubmit}
-                disabled={loginMutation.isLoading} // Disable button while loading
+                disabled={loading} // Disable the button when loading
               >
-                {loginMutation.isLoading ? ( // Show loading spinner or change button text
-                  <ActivityIndicator color="#fff" />
+                {loading ? (
+                  <ActivityIndicator color="#fff" /> // Show loading spinner when logging in
                 ) : (
                   <Text style={styles.buttonText}>Login</Text>
                 )}

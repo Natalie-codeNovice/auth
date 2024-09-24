@@ -1,10 +1,15 @@
 import { Tabs } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
 import ProtectedRoute from "../components/ProtectedRoute";
+
 export default function RootLayout() {
   return (
     <ProtectedRoute>
-      <Tabs>
+      <Tabs
+        screenOptions={{
+          swipeEnabled: true, // Enable swipe gestures between tabs
+        }}
+      >
         <Tabs.Screen
           name="index"
           options={{
@@ -29,7 +34,7 @@ export default function RootLayout() {
         <Tabs.Screen
           name="goals"
           options={{
-            headerShown:false,
+            headerShown: false,
             title: "Goals",
             tabBarIcon: ({ color }) => (
               <FontAwesome size={28} name="graduation-cap" color={color} />

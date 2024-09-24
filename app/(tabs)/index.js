@@ -16,7 +16,9 @@ const TabHome = () => {
   const handleTransHist = () => {
     router.push("/history/")
   };
-
+  const handleDonate = () => {
+    router.push("/user/donate")
+  };
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to Your Finance Tracker</Text>
@@ -41,6 +43,12 @@ const TabHome = () => {
             <Text style={styles.featureText}>Transaction History</Text>
           </LinearGradient>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.featureItem} onPress={handleDonate}>
+          <LinearGradient colors={["red", "red"]} style={styles.gradient}>
+            <Icon name="heart" size={30} color="#fff" />
+            <Text style={styles.featureText}>Donate</Text>
+          </LinearGradient>
+        </TouchableOpacity>        
       </View>
     </View>
   );

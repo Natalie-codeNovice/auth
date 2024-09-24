@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Auth-app",
-    "slug": "Auth-app",
-    "scheme": "auth-app",
+    "name": "PFMS", 
+    "slug": "pfms", 
+    "scheme": "pfms",  
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,10 +17,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo1.jpg",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.paccy250.Authapp"
+      "package": "com.paccy250.pfms" 
     },
     "web": {
       "favicon": "./assets/favicon.png"

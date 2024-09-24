@@ -1,5 +1,6 @@
 import axios from "axios";
-import {URL} from "./url";
+import {paymentUrl, URL} from "./url";
+import { current } from "@reduxjs/toolkit";
 const baseURL = URL;
 // API call for logging in a user
 const loginUser = async ({ username, password }) => {
@@ -102,5 +103,18 @@ const userLogout = async ({ userId, token }) => {
   return response.data;
 };
 
+//donate
+const donate = async ({ phoneNumber, amount }) => {
+  const response = await axios.post(
+    `${paymentUrl}/process_payment`,
+    {
+      phoneNumber,
+      currency:"EUR",
+      amount
+    }
+  );
+  return response.data;
+};
 
-export { loginUser, registerUser, updateUser, updatePassword, deleteUser, getUser,forgotPassword,userLogout };
+
+export { loginUser, registerUser, updateUser, updatePassword, deleteUser, getUser,forgotPassword,userLogout,donate };

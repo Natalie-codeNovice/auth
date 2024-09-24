@@ -21,6 +21,7 @@ function AppWrapper() {
       <Stack.Screen name="user/changePhone" options={{ title: "Change Number", headerShown: true }} />  
       <Stack.Screen name="user/changeUsername" options={{ title: "Change Username", headerShown: true }} /> 
       <Stack.Screen name="user/help" options={{ title: "Help", headerShown: true }} /> 
+      <Stack.Screen name="user/donate" options={{ title: "Donate", headerShown: true }} /> 
        
       {/* report  */}
       <Stack.Screen name="report/index" options={{ title: "Back", headerShown: true }} />  
