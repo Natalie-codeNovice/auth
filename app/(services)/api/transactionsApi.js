@@ -210,6 +210,16 @@ const addGoal = async (userId, token, newGoal) => {
   return response.data; 
 };
 
+//api call for cancelling transaction
+const cancelTransaction = async (transactionId) => {
+  console.log("TransactionId: ", transactionId);
+  const response = await axios.post(
+    `${baseURL}/cancel-transactions/${transactionId}`, 
+    {},
+  );
+  return response.data; 
+};
+
 // Export all functions
 export { 
   getNetBalance, 
@@ -227,5 +237,6 @@ export {
   getCustomReport,
   getWeekReportChart,
   getMonthReportChart,
-  getDaylyReport
+  getDaylyReport,
+  cancelTransaction
 };

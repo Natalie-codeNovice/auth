@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -30,7 +30,7 @@ export default function Register() {
     mutationFn: registerUser,
     mutationKey: ["register"],
   });
-
+  const [loading, setLoading] = useState(false);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Register</Text>
@@ -50,6 +50,7 @@ export default function Register() {
         initialValues={{ username: "", email: "", password: "", confirmPassword: "", phoneNumber: "" }}
         validationSchema={RegisterSchema}
         onSubmit={(values) => {
+          setLoading(true);
           mutation.mutateAsync(values)
             .then((data) => {
               console.log("Registration data:", data);
@@ -58,6 +59,9 @@ export default function Register() {
             .catch((err) => {
               console.error("Registration error:", err);
               // Handle registration error here
+            })
+            .finally(() => {
+              setLoading(false); // Set loading to false when login completes
             });
         }}
       >
@@ -123,17 +127,17 @@ export default function Register() {
             {errors.phoneNumber && touched.phoneNumber ? (
               <Text style={styles.errorText}>{errors.phoneNumber}</Text>
             ) : null}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSubmit}
-              disabled={mutation.isLoading}
-            >
-              {mutation.isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Register</Text>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleSubmit}
+                disabled={loading} // Disable the button when loading
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" /> // Show loading spinner when logging in
+                ) : (
+                  <Text style={styles.buttonText}>Register</Text>
+                )}
+              </TouchableOpacity>
             <View style={styles.loginPrompt}>
               <Text style={styles.loginPromptText}>Already have an account?</Text>
               <TouchableOpacity onPress={() => router.push("/auth/login")}>

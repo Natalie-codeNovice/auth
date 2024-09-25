@@ -19,6 +19,10 @@ const ReportHome = () => {
   const handleMonthReport = () => {
     router.push("./month");
   };
+  
+  const handleCancelledTransactions = () => {
+    router.push("./cancelledTransaction");
+  };
 
   return (
     <View style={styles.container}>
@@ -59,6 +63,14 @@ const ReportHome = () => {
           <Text style={styles.optionText}>Month Report</Text>
           <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={handleCancelledTransactions}
+        >
+          <Icon name="trash" size={24} color="#f44336" />
+          <Text style={styles.optionText}>Cancelled transactions</Text>
+          <Icon name="angle-right" size={24} color="#999" style={styles.optionIcon} />
+        </TouchableOpacity>        
       </View>
     </View>
   );

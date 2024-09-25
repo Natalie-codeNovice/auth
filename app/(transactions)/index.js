@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Modal, TextInput, FlatList } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Modal, TextInput, FlatList, Alert, ToastAndroid } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
-import { getExpense, getIncome, getNetBalance, addTransaction } from '../(services)/api/transactionsApi'; 
+import { getExpense, getIncome, getNetBalance, addTransaction, cancelTransaction } from '../(services)/api/transactionsApi'; 
 import { LinearGradient } from 'expo-linear-gradient';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
+
+
 
 // Validation schema with Yup
 const validationSchema = Yup.object().shape({
@@ -61,6 +63,42 @@ const NewTransaction = () => {
   const [transactionType, setTransactionType] = useState('income');
   const [error, setError] = useState('');
 
+  const confirmCancel = (transactionId) => {
+    Alert.alert(
+      "Cancel Transaction",
+      "Are you sure you want to cancel this transaction?",
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: async () => {
+            if (!transactionId) {
+              ToastAndroid.show("Invalid transaction ID", ToastAndroid.SHORT);
+              return;
+            }
+            try {
+              await cancelTransaction(transactionId);
+              queryClient.invalidateQueries(['income', userId, token]);
+              queryClient.invalidateQueries(['expenses', userId, token]);
+              queryClient.invalidateQueries(['netBalance', userId, token]); 
+              setModalVisible(false);
+              ToastAndroid.show("Transaction cancelled successfully", ToastAndroid.SHORT);
+            } catch (error) {
+              console.error("Error cancelling transaction:", error); // Log the error
+              const errorMessage = error.response?.data?.message || "Failed to cancel transaction"; // Use specific error message if available
+              ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+  
+
   useEffect(() => {
     if (incomeData) {
       setIncomeList(incomeData.income || []);
@@ -72,7 +110,6 @@ const NewTransaction = () => {
 
   const mutation = useMutation({
     mutationFn: async (newTransaction) => {
-      // Check for balance before adding transaction
       if (newTransaction.type === 'expense' && newTransaction.amount > netBalanceData.balance) {
         throw new Error('Insufficient balance');
       }
@@ -88,6 +125,7 @@ const NewTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['income', userId, token]);
       queryClient.invalidateQueries(['expenses', userId, token]);
+      queryClient.invalidateQueries(['netBalance', userId, token]); 
       setModalVisible(false);
     },
     onError: (error) => {
@@ -131,18 +169,22 @@ const NewTransaction = () => {
       </View>
 
       <FlatList
-        data={transactionType === 'income' ? incomeList : expenseList}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.transactionList}
-        renderItem={({ item }) => (
-          <View style={styles.transactionItem}>
-            <Text style={styles.transactionDescription}>{item.description}</Text>
-            <Text style={styles.transactionAmount}>
-              {transactionType === 'income' ? `+${item.amount}` : `-${item.amount}`}Rwf
-            </Text>
-          </View>
-        )}
-      />
+  data={transactionType === 'income' ? incomeList : expenseList}
+  keyExtractor={(item) => item.id.toString()}
+  contentContainerStyle={styles.transactionList}
+  renderItem={({ item }) => (
+    <TouchableOpacity
+      onPress={() => confirmCancel(item.id)}
+      style={styles.transactionItem}
+    >
+      <Text style={styles.transactionDescription}>{item.description}</Text>
+      <Text style={styles.transactionAmount}>
+        {transactionType === 'income' ? `+${item.amount}` : `-${item.amount}`}Rwf
+      </Text>
+    </TouchableOpacity>
+  )}
+/>
+
 
       <TouchableOpacity
         style={styles.addButton}

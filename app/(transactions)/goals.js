@@ -327,7 +327,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
   },
   noDataContainer: {
-    alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
   },
@@ -393,7 +392,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderColor: '#ccc',
-    marginBottom: 10,
   },
   errorText: {
     color: 'red',
@@ -402,5 +400,4 @@ const styles = StyleSheet.create({
     top:'50%',
   }
 });
-
 export default Goals;
