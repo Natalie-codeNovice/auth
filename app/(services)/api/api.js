@@ -104,12 +104,12 @@ const userLogout = async ({ userId, token }) => {
 };
 
 //donate
-const donate = async ({ phoneNumber, amount }) => {
+const donate = async ({ userId,phoneNumber, amount }) => {
   const response = await axios.post(
-    `${paymentUrl}/process_payment`,
+    `${baseURL}/donate`,
     {
+      userId,
       phoneNumber,
-      currency:"EUR",
       amount
     }
   );

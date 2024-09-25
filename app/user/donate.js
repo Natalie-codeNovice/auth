@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -15,6 +15,7 @@ import * as Yup from "yup";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMutation } from "@tanstack/react-query";
 import Icon from "react-native-vector-icons/FontAwesome"; 
+import { useSelector } from 'react-redux';  // Ensure you import useSelector
 import { donate as donateAPI } from "../(services)/api/api";
 
 const DonateSchema = Yup.object().shape({
@@ -31,9 +32,10 @@ const DonateSchema = Yup.object().shape({
 export default function Donate() {
   const [modalVisible, setModalVisible] = useState(false);
   const scaleValue = new Animated.Value(1);
+  const userId = useSelector((state) => state.auth.user?.userId);
 
   const donationMutation = useMutation({
-    mutationFn: donateAPI,
+    mutationFn: (values) => donateAPI({ ...values, userId }), // Pass userId with the donation values
     mutationKey: ["donate"],
     onSuccess: () => {
       Alert.alert("Thank You!", "Your donation has been processed.");
@@ -61,7 +63,7 @@ export default function Donate() {
     ).start();
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     startPumping();
   }, []);
 
@@ -83,7 +85,12 @@ export default function Donate() {
         </Text>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.donateButton} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity 
+            style={styles.donateButton} 
+            onPress={() => setModalVisible(true)}
+            accessible={true}
+            accessibilityLabel="Donate Now"
+          >
             <LinearGradient
               colors={['#FF9800', '#F57C00']}
               style={styles.buttonGradient}
@@ -106,6 +113,8 @@ export default function Donate() {
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
               style={styles.closeIcon}
+              accessible={true}
+              accessibilityLabel="Close donation form"
             >
               <Text style={styles.closeText}>X</Text>
             </TouchableOpacity>
@@ -132,6 +141,7 @@ export default function Donate() {
                     onChangeText={handleChange("phoneNumber")}
                     onBlur={handleBlur("phoneNumber")}
                     value={values.phoneNumber}
+                    accessibilityLabel="Phone Number Input"
                   />
                   {errors.phoneNumber && touched.phoneNumber && (
                     <Text style={styles.errorText}>{errors.phoneNumber}</Text>
@@ -144,6 +154,7 @@ export default function Donate() {
                     onChangeText={handleChange("amount")}
                     onBlur={handleBlur("amount")}
                     value={values.amount}
+                    accessibilityLabel="Amount Input"
                   />
                   {errors.amount && touched.amount && (
                     <Text style={styles.errorText}>{errors.amount}</Text>
@@ -153,6 +164,7 @@ export default function Donate() {
                     style={styles.button}
                     onPress={handleSubmit}
                     disabled={donationMutation.isLoading}
+                    accessibilityLabel="Submit Donation"
                   >
                     {donationMutation.isLoading ? (
                       <ActivityIndicator color="#fff" />
@@ -274,7 +286,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-    marginTop: 16,
+    borderRadius: 10,
+    marginTop: 10,
   },
 });

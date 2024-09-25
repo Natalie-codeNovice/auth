@@ -220,6 +220,26 @@ const cancelTransaction = async (transactionId) => {
   return response.data; 
 };
 
+//api call for getting cancelled transaction
+const getCancelledTransactions = async (userId) => {
+  try {
+    const response = await axios.get(
+      `${baseURL}/cancelled-transactions/${userId}`, 
+      {
+        headers: {
+          // If token is no longer required, remove this line
+          // Authorization: `Bearer ${token}`, 
+        },
+      }
+    );
+    return response.data; 
+  } catch (error) {
+    console.error("API call error:", error);
+    throw error; // Rethrow the error for handling in the component
+  }
+};
+ 
+
 // Export all functions
 export { 
   getNetBalance, 
@@ -238,5 +258,6 @@ export {
   getWeekReportChart,
   getMonthReportChart,
   getDaylyReport,
-  cancelTransaction
+  cancelTransaction,
+  getCancelledTransactions
 };
