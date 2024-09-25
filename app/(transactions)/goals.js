@@ -1,281 +1,406 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  TextInput,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal,
-  Animated,
-} from "react-native";
-import { Formik } from "formik";
-import * as Yup from "yup";
-import { LinearGradient } from "expo-linear-gradient";
-import { useMutation } from "@tanstack/react-query";
-import Icon from "react-native-vector-icons/FontAwesome"; 
-import { donate as donateAPI } from "../(services)/api/api";
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, Text, View, FlatList, Alert, Modal, TouchableOpacity, RefreshControl, Platform, TextInput, Button, ActivityIndicator } from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { FontAwesome } from '@expo/vector-icons';
+import * as Yup from 'yup';
+import { useFormik } from 'formik';
 
-const DonateSchema = Yup.object().shape({
-  phoneNumber: Yup.string()
-    .matches(/^[0-9]+$/, "Phone number must be only digits")
-    .min(10, "Phone number is too short")
-    .max(10, "Phone number is too long")
-    .required("Phone number is required"),
-  amount: Yup.number()
-    .required("Amount is required")
-    .positive("Amount must be greater than zero"),
+import { addGoal, getGoals } from '../(services)/api/transactionsApi';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker} from '@react-native-picker/picker';
+
+
+const validationSchema = Yup.object({
+  categoryName: Yup.string().required('Category name is required'),
+  limitAmount: Yup.number().required('Limit amount is required').positive('Limit amount must be positive'),
+  startingDate: Yup.date().required('Starting date is required').typeError('Invalid date format'),
+  endingDate: Yup.date().required('Ending date is required').typeError('Invalid date format'),
 });
 
-export default function Donate() {
-  const [modalVisible, setModalVisible] = useState(false);
-  const scaleValue = new Animated.Value(1);  // For heart pump animation
+const motivationalQuotes = [
+  "Setting goals is the first step in turning the invisible into the visible.",
+  "A goal without a plan is just a wish.",
+  "The future belongs to those who believe in the beauty of their dreams.",
+  "Your limitation—it's only your imagination.",
+];
 
-  const donationMutation = useMutation({
-    mutationFn: donateAPI,
-    mutationKey: ["donate"],
-    onSuccess: () => {
-      Alert.alert("Thank You!", "Your donation has been processed.");
-      setModalVisible(false);
-    },
+const Goals = () => {
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const token = useSelector(state => state.auth.token);
+  const userId = useSelector(state => state.auth.user?.userId);
+  const queryClient = useQueryClient();
+
+  // Fetch goals
+  const { data: goals, error, isLoading, refetch } = useQuery({
+    queryKey: ['goals', userId],
+    queryFn: () => getGoals(userId, token),
+    enabled: !!userId && !!token,
     onError: (error) => {
-      Alert.alert("Error", error.response?.data?.message || "An error occurred.");
+      Alert.alert('Error', error.message);
     },
   });
 
-  // Heart pump animation loop
-  const startPumping = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleValue, {
-          toValue: 1.3, // Slightly larger size
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleValue, {
-          toValue: 1, // Back to normal size
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+  // Formik setup
+  const formik = useFormik({
+    initialValues: {
+      categoryName: '',
+      limitAmount: '',
+      startingDate: new Date(),
+      endingDate: new Date(),
+    },
+    validationSchema,
+    onSubmit: (values) => {
+      addGoalMutation.mutate(values);
+    },
+  });
+
+  // Add new goal mutation
+  const addGoalMutation = useMutation({
+    mutationFn: (newGoal) => addGoal(userId, token, newGoal),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['goals', userId]);
+      formik.resetForm();
+      setModalVisible(false);
+    },
+    onError: (error) => {
+      Alert.alert('Error', error.message);
+    },
+  });
+
+  const onRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
+  const handleStartDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || formik.values.startingDate;
+    setShowStartDatePicker(Platform.OS === 'ios');
+    formik.setFieldValue('startingDate', currentDate);
   };
 
-  useEffect(() => {
-    startPumping();
-  }, []);
+  const handleEndDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || formik.values.endingDate;
+    setShowEndDatePicker(Platform.OS === 'ios');
+    formik.setFieldValue('endingDate', currentDate);
+  };
+
+  if (isLoading)     
+  return(<View style={styles.isLoading}>
+    <ActivityIndicator size="large" color="#0066cc" />
+  </View>);
+
+  const renderGoalItem = ({ item, index }) => (
+    <View style={styles.goalCard}>
+      <View style={styles.numberingContainer}>
+        <Text style={styles.numbering}>{index + 1}</Text>
+      </View>
+      <View style={styles.cardContent}>
+        <View style={styles.leftSide}>
+          <Text style={styles.label}>Category Name:</Text>
+          <Text style={styles.value}>{item.categoryName}</Text>
+          <Text style={styles.label}>Usage Amount:</Text>
+          <Text style={styles.value}>{item.usageAmount} Rwf</Text>
+          <Text style={styles.label}>Starting Date:</Text>
+          <Text style={styles.value}>{new Date(item.startingDate).toLocaleDateString()}</Text>
+        </View>
+        <View style={styles.rightSide}>
+          <Text style={styles.label}>Category Limit:</Text>
+          <Text style={styles.value}>{item.limitAmount}</Text>
+          <Text style={styles.label}>Remaining Amount:</Text>
+          <Text style={styles.value}>{item.remainedAmount} Rwf</Text>
+          <Text style={styles.label}>Ending Date:</Text>
+          <Text style={styles.value}>{new Date(item.endingDate).toLocaleDateString()}</Text>
+        </View>
+      </View>
+      <View style={styles.progressContainer}>
+        <Text style={styles.progressText}>Usage: {item.usagePercentage}%</Text>
+        <View style={styles.progressBarContainer}>
+          <View
+            style={[
+              styles.progressBar,
+              { width: `${item.usagePercentage}%` },
+            ]}
+          />
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#FF5722', '#E64A19']}
-        style={styles.headerGradient}
+      <FlatList
+        data={goals}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderGoalItem}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>Setting your limits!</Text>
+            <Text style={styles.motivationalQuote}>
+              {motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]}
+            </Text>
+          </View>
+        }
+      />
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setModalVisible(true)}
+        accessibilityLabel="Add New Goal"
       >
-        <Text style={styles.title}>Support Us with a Donation</Text>
-        <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
-          <Icon name="heart" size={80} color="#fff" />
-        </Animated.View>
-      </LinearGradient>
+        <FontAwesome name="plus" size={24} color="white" />
+      </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Text style={styles.text}>
-          Your support helps us improve and maintain this app. Any amount you donate will make a difference!
-        </Text>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.donateButton} onPress={() => setModalVisible(true)}>
-            <LinearGradient
-              colors={['#FF9800', '#F57C00']}
-              style={styles.buttonGradient}
-            >
-              <Text style={styles.buttonText}>Donate Now</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Modal for Donation Form */}
+      {/* Modal for Adding New Goal */}
       <Modal
+        visible={isModalVisible}
         animationType="slide"
         transparent={true}
-        visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <TouchableOpacity
-              onPress={() => setModalVisible(false)}
               style={styles.closeIcon}
+              onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.closeText}>X</Text>
+              <FontAwesome name="close" size={24} color="red" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Donate Now</Text>
-
-            <Formik
-              initialValues={{ phoneNumber: '', amount: '' }}
-              validationSchema={DonateSchema}
-              onSubmit={(values) => donationMutation.mutate(values)}
+            <Text style={styles.header}>Add New Goal</Text>
+            <Text style={styles.inputLabel}>Category</Text>
+            <Picker
+              selectedValue={formik.values.categoryName}
+              onValueChange={(itemValue) => formik.setFieldValue('categoryName', itemValue)}
+              style={styles.picker}
             >
-              {({
-                handleChange,
-                handleBlur,
-                handleSubmit,
-                values,
-                errors,
-                touched,
-              }) => (
-                <View style={styles.form}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Phone Number"
-                    keyboardType="phone-pad"
-                    onChangeText={handleChange("phoneNumber")}
-                    onBlur={handleBlur("phoneNumber")}
-                    value={values.phoneNumber}
-                  />
-                  {errors.phoneNumber && touched.phoneNumber && (
-                    <Text style={styles.errorText}>{errors.phoneNumber}</Text>
-                  )}
+              <Picker.Item label="Select Category" value="" />
+              <Picker.Item label="Food" value="Food" />
+              <Picker.Item label="Transport" value="Transport" />
+              <Picker.Item label="Shopping" value="Shopping" />
+              <Picker.Item label="Utilities" value="Utilities" />
+              <Picker.Item label="Healthcare" value="Healthcare" />
+              <Picker.Item label="Entertainment" value="Entertainment" />
+            </Picker>
+            {formik.touched.categoryName && formik.errors.categoryName ? (
+              <Text style={styles.errorText}>{formik.errors.categoryName}</Text>
+            ) : null}
 
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Amount (RWF)"
-                    keyboardType="numeric"
-                    onChangeText={handleChange("amount")}
-                    onBlur={handleBlur("amount")}
-                    value={values.amount}
-                  />
-                  {errors.amount && touched.amount && (
-                    <Text style={styles.errorText}>{errors.amount}</Text>
-                  )}
+            <Text style={styles.inputLabel}>Limit Amount</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Limit Amount"
+              keyboardType="numeric"
+              value={formik.values.limitAmount}
+              onChangeText={formik.handleChange('limitAmount')}
+              onBlur={formik.handleBlur('limitAmount')}
+              accessibilityLabel="Limit Amount"
+            />
+            {formik.touched.limitAmount && formik.errors.limitAmount ? (
+              <Text style={styles.errorText}>{formik.errors.limitAmount}</Text>
+            ) : null}
 
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleSubmit}
-                    disabled={donationMutation.isLoading}
-                  >
-                    {donationMutation.isLoading ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={styles.buttonText}>Donate</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              )}
-            </Formik>
+            <Text style={styles.inputLabel}>Starting Date</Text>
+            <TouchableOpacity onPress={() => setShowStartDatePicker(true)}>
+              <Text style={styles.dateText}>
+                {formik.values.startingDate.toLocaleDateString()}
+              </Text>
+            </TouchableOpacity>
+            {showStartDatePicker && (
+              <DateTimePicker
+                value={formik.values.startingDate}
+                mode="date"
+                display="default"
+                onChange={handleStartDateChange}
+                minimumDate={new Date()}
+              />
+            )}
+
+            <Text style={styles.inputLabel}>Ending Date</Text>
+            <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
+              <Text style={styles.dateText}>
+                {formik.values.endingDate.toLocaleDateString()}
+              </Text>
+            </TouchableOpacity>
+            {showEndDatePicker && (
+              <DateTimePicker
+                value={formik.values.endingDate}
+                mode="date"
+                display="default"
+                onChange={handleEndDateChange}
+                minimumDate={new Date()}
+              />
+            )}
+
+            <Button
+              title="Add Goal"
+              onPress={formik.handleSubmit}
+              disabled={addGoalMutation.isLoading}
+            />
           </View>
         </View>
       </Modal>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    padding: 16,
+    top:35
   },
-  headerGradient: {
-    paddingVertical: 40,
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 5,
-    paddingHorizontal: 20,
-    marginBottom: 20,
   },
-  title: {
-    fontSize: 28,
+  header: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-    textAlign: 'center',
+    marginBottom: 16,
   },
-  text: {
+  numberingContainer: {
+    backgroundColor: '#2196F3',
+    borderRadius: 50,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    marginRight: 'auto',
+    marginLeft: 'auto',
+  },
+  numbering: {
+    color: 'white',
     fontSize: 16,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  buttonContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  donateButton: {
-    width: '80%',
-    borderRadius: 10,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  buttonGradient: {
-    paddingVertical: 15,
-    alignItems: 'center',
-    borderRadius: 10,
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 20,
-    color: '#fff',
     fontWeight: 'bold',
   },
-  modalOverlay: {
+  goalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    top:10,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  leftSide: {
+    flex: 1,
+  },
+  rightSide: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  label: {
+    fontWeight: 'bold',
+  },
+  value: {
+    marginBottom: 8,
+  },
+  progressContainer: {
+    marginTop: 8,
+  },
+  progressText: {
+    fontWeight: 'bold',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: 'green',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: 'red',
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  noDataText: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  motivationalQuote: {
+    fontStyle: 'italic',
+    color: '#888',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 60,
+    right: 16,
+    width: 56,
+    height: 56,
+    backgroundColor: '#2196F3',
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+  },
+  modalContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '90%',
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: 'white',
     padding: 20,
-    alignItems: 'center',
+    borderRadius: 10,
+    margin: 20,
     elevation: 5,
   },
   closeIcon: {
-    alignSelf: 'flex-end',
-    padding: 10,
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    color: 'red',
   },
-  closeText: {
-    fontSize: 24,
-    color: '#333',
-  },
-  modalTitle: {
+  header: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
   },
-  form: {
-    width: '100%',
+  inputLabel: {
+    fontSize: 16,
+    marginBottom: 5,
   },
   input: {
-    width: '100%',
-    padding: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 5,
     marginBottom: 10,
-    backgroundColor: '#fff',
+  },
+  picker: {
+    marginBottom: 10,
+  },
+  dateText: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 10,
   },
   errorText: {
-    fontSize: 14,
     color: 'red',
-    marginBottom: 10,
   },
-  button: {
-    height: 50,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginTop: 16,
-  },
+  isLoading: {
+    top:'50%',
+  }
 });
+
+export default Goals;
