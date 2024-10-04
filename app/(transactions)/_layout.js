@@ -35,7 +35,7 @@ export default function RootLayout() {
           name="goals"
           options={{
             headerShown: false,
-            title: "Goals",
+            title: "Budget",
             tabBarIcon: ({ color }) => (
               <FontAwesome size={28} name="graduation-cap" color={color} />
             ),

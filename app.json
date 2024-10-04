@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "PFMS", 
-    "slug": "pfms", 
-    "scheme": "pfms",  
+    "name": "PFMS",
+    "slug": "pfms",
+    "scheme": "pfms",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/logo1.jpg",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.paccy250.pfms" 
+      "package": "com.paccy250.pfms"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,7 +33,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "3146a1f6-93c7-43e1-b7e5-e930f6f32f33"
+        "projectId": "25a55e39-96fc-4818-991e-f73030d83b76"
       }
     },
     "owner": "paccy250"

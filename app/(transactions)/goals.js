@@ -139,7 +139,7 @@ const Goals = () => {
         }
         ListEmptyComponent={
           <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>Setting your limits!</Text>
+            <Text style={styles.noDataText}>Setting your Budget!</Text>
             <Text style={styles.motivationalQuote}>
               {motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]}
             </Text>

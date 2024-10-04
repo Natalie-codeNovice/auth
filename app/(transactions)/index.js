@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     top:54,
   },
   balanceCard: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#6200ea",
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
