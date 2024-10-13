@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 
 const TabHome = () => {
   const router = useRouter();
+  
   const handleIncome = () => {
     router.push("/(transactions)");
   };
@@ -13,15 +14,17 @@ const TabHome = () => {
   const handleReport = () => {
     router.push("/report/");
   };
+
   const handleTransHist = () => {
     router.push("/history/")
   };
+
   const handleDonate = () => {
     router.push("/user/donate")
   };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Your Finance Tracker</Text>
       <Text style={styles.subtitle}>Explore App Features:</Text>
       <View style={styles.featureList}>
         <TouchableOpacity style={styles.featureItem} onPress={handleIncome}>
@@ -37,14 +40,16 @@ const TabHome = () => {
             <Text style={styles.featureText}>Generate Reports</Text>
           </LinearGradient>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.featureItem} onPress={handleTransHist}>
           <LinearGradient colors={["#9E9E9E", "#616161"]} style={styles.gradient}>
             <Icon name="user" size={30} color="#fff" />
             <Text style={styles.featureText}>Transaction History</Text>
           </LinearGradient>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.featureItem} onPress={handleDonate}>
-          <LinearGradient colors={["red", "red"]} style={styles.gradient}>
+          <LinearGradient colors={["#FF5733", "#C70039"]} style={styles.gradient}>
             <Icon name="heart" size={30} color="#fff" />
             <Text style={styles.featureText}>Donate</Text>
           </LinearGradient>
@@ -60,21 +65,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#f5f5f5",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-    color: "#333",
+    backgroundColor: "#E8F0F2", // Light background color for a soft look
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 30,
     textAlign: "center",
-    color: "#666",
+    color: "#333",
   },
   featureList: {
     flexDirection: "column",
@@ -83,7 +81,7 @@ const styles = StyleSheet.create({
   },
   featureItem: {
     width: "90%",
-    marginBottom: 15,
+    marginBottom: 20,
   },
   gradient: {
     flexDirection: "row",
@@ -92,7 +90,14 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderRadius: 10,
-    elevation: 5,
+    elevation: 6, // Enhanced elevation for a more pronounced shadow effect
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   featureText: {
     fontSize: 18,

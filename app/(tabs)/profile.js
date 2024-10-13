@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Text, Image, FlatList, ActivityIndicator, Alert } from "react-native";
+import { View, StyleSheet, Text, Image, FlatList, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
 import { useSelector } from "react-redux";
 import { getUser } from "../(services)/api/api";
-import { getNetBalance } from "../(services)/api/transactionsApi";
+import { getExpense, getIncome, getNetBalance } from "../(services)/api/transactionsApi";
 import { FontAwesome } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 
 export default function Profile() {
   const userId = useSelector((state) => state.auth.user.userId);
@@ -12,8 +13,17 @@ export default function Profile() {
 
   const [user, setUser] = useState(null);
   const [netBalance, setNetBalance] = useState({});
+  const [income, setIncome] = useState({});
+  const [expense, setExpense] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const router = useRouter();
+  const handleUsernameChange = () => {
+    router.push("/user/changeUsername");
+  };
+  const handleTransHist = () => {
+    router.push("/history/")
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,6 +35,12 @@ export default function Profile() {
 
           const netBalanceData = await getNetBalance(userId, token);
           setNetBalance(netBalanceData);
+
+          const incomeData = await getIncome(userId, token);
+          setIncome(incomeData);
+
+          const expenseData = await getExpense(userId, token);
+          setExpense(expenseData);
         }
       } catch (err) {
         setError("Failed to load data");
@@ -54,7 +70,7 @@ export default function Profile() {
   }
 
   const renderProfileHeader = () => (
-    <LinearGradient colors={['#0062ff', '#33ccff']} style={styles.gradientBackground}>
+    <LinearGradient colors={['#1f6bc4', '#33ccff']} style={styles.gradientBackground}>
       <View style={styles.profileContainer}>
         <Image
           source={{ uri: user?.profilePicture || 'https://via.placeholder.com/150' }} // Placeholder image
@@ -68,14 +84,52 @@ export default function Profile() {
           <FontAwesome name="money" size={32} color="#fff" />
           <Text style={styles.balanceText}>{netBalance.balance || '0.00'} RWF</Text>
         </View>
+
+        {/* Adding buttons for additional actions */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.button}
+            onPress={handleUsernameChange}
+          >
+            <FontAwesome name="edit" size={24} color="#fff" />
+            <Text style={styles.buttonText}>Edit Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.button}
+          onPress={handleTransHist}
+          >
+            <FontAwesome name="history" size={24} color="#fff" />
+            <Text style={styles.buttonText}>View Transactions</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </LinearGradient>
+  );
+
+  const renderStats = () => (
+    <View style={styles.statsContainer}>
+      <Text style={styles.statsTitle}>Your Statistics</Text>
+      <View style={styles.statsCards}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{income.totalIncome || '0.00'}RWF</Text>
+          <Text style={styles.statLabel}>Total Income</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{expense.totalExpenses || '0.00'}RWF</Text>
+          <Text style={styles.statLabel}>Total Expense</Text>
+        </View>
+      </View>
+    </View>
   );
 
   return (
     <View style={styles.container}>
       <FlatList
-        ListHeaderComponent={renderProfileHeader}
+        ListHeaderComponent={
+          <>
+            {renderProfileHeader()}
+            {renderStats()}
+          </>
+        }
       />
     </View>
   );
@@ -84,10 +138,10 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#f8f9fa",
   },
   gradientBackground: {
-    padding: 20,
+    padding: 30,
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     marginBottom: 20,
@@ -129,12 +183,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
+    width: '80%',
   },
   balanceText: {
     fontSize: 24,
     fontWeight: 'bold',
     color: "#fff",
     marginLeft: 10,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    width: '80%',
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1f6bc4',
+    padding: 10,
+    borderRadius: 10,
+    flex: 1,
+    margin: 5,
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    marginLeft: 10,
+    fontWeight: 'bold',
   },
   loadingContainer: {
     flex: 1,
@@ -151,5 +227,45 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'red',
     textAlign: 'center',
+  },
+  statsContainer: {
+    padding: 20,
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  statsTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+    color: "#333",
+  },
+  statsCards: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    backgroundColor: '#f1f1f1',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    width: '45%',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 5,
   },
 });

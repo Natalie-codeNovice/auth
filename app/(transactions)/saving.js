@@ -11,12 +11,61 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator } from 'react-native-paper';
 
 const categoryOptions = [
-  { label: 'Shelter', value: 'Shelter' },
-  { label: 'Food', value: 'Food' },
-  { label: 'Transportation', value: 'Transportation' },
-  { label: 'Utilities', value: 'Utilities' },
-  { label: 'Entertainment', value: 'Entertainment' },
-  { label: 'Other', value: 'Other' },
+  { label: 'Housing', value: 'housing' },
+  { label: 'Rent/Mortgage', value: 'rent_mortgage' },
+  { label: 'Property Taxes', value: 'property_taxes' },
+  { label: 'Home Insurance', value: 'home_insurance' },
+  { label: 'Repairs/Maintenance', value: 'repairs_maintenance' },
+  { label: 'Utilities', value: 'utilities' },
+  { label: 'Electricity', value: 'electricity' },
+  { label: 'Water', value: 'water' },
+  { label: 'Gas', value: 'gas' },
+  { label: 'Internet', value: 'internet' },
+  { label: 'Phone', value: 'phone' },
+  { label: 'Food', value: 'food' },
+  { label: 'Groceries', value: 'groceries' },
+  { label: 'Dining Out', value: 'dining_out' },
+  { label: 'Snacks/Coffee', value: 'snacks_coffee' },
+  { label: 'Transportation', value: 'transportation' },
+  { label: 'Gas/Fuel', value: 'gas_fuel' },
+  { label: 'Public Transportation', value: 'public_transport' },
+  { label: 'Car Payments', value: 'car_payments' },
+  { label: 'Insurance', value: 'car_insurance' },
+  { label: 'Repairs/Maintenance', value: 'car_repairs' },
+  { label: 'Healthcare', value: 'healthcare' },
+  { label: 'Medical Bills', value: 'medical_bills' },
+  { label: 'Insurance Premiums', value: 'health_insurance' },
+  { label: 'Medications', value: 'medications' },
+  { label: 'Gym/Fitness Memberships', value: 'gym_membership' },
+  { label: 'Entertainment', value: 'entertainment' },
+  { label: 'Movies/Concerts', value: 'movies_concerts' },
+  { label: 'Subscriptions', value: 'subscriptions' },
+  { label: 'Hobbies', value: 'hobbies' },
+  { label: 'Clothing', value: 'clothing' },
+  { label: 'Apparel', value: 'apparel' },
+  { label: 'Shoes', value: 'shoes' },
+  { label: 'Accessories', value: 'accessories' },
+  { label: 'Education', value: 'education' },
+  { label: 'Tuition', value: 'tuition' },
+  { label: 'Books/Supplies', value: 'books_supplies' },
+  { label: 'Student Loans', value: 'student_loans' },
+  { label: 'Personal Care', value: 'personal_care' },
+  { label: 'Haircuts', value: 'haircuts' },
+  { label: 'Toiletries', value: 'toiletries' },
+  { label: 'Spa Treatments', value: 'spa_treatments' },
+  { label: 'Travel', value: 'travel' },
+  { label: 'Flights', value: 'flights' },
+  { label: 'Accommodation', value: 'accommodation' },
+  { label: 'Meals', value: 'meals' },
+  { label: 'Childcare', value: 'childcare' },
+  { label: 'Daycare', value: 'daycare' },
+  { label: 'School Fees', value: 'school_fees' },
+  { label: 'Activities', value: 'activities' },
+  { label: 'Miscellaneous', value: 'miscellaneous' },
+  { label: 'Gifts', value: 'gifts_expense' },
+  { label: 'Donations', value: 'donations_expense' },
+  { label: 'Pet Expenses', value: 'pet_expenses' },
+  { label: 'Unexpected Expenses', value: 'unexpected_expenses' },
 ];
 
 const Saving = () => {
@@ -28,6 +77,7 @@ const Saving = () => {
   const queryClient = useQueryClient();
   const token = useSelector(state => state.auth.token); 
   const userId = useSelector(state => state.auth.user?.userId);
+  const [loading, setLoading] = useState(false);
 
   // Query for fetching savings
   const { data = { totalSavings: 0, savings: [] }, isLoading, error, refetch } = useQuery({
@@ -214,6 +264,7 @@ const Saving = () => {
                 category: Yup.string().required('Category is required'),
               })}
               onSubmit={(values) => handleAddSaving(values)}
+              
             >
               {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <View>

@@ -178,13 +178,32 @@ const Goals = () => {
               onValueChange={(itemValue) => formik.setFieldValue('categoryName', itemValue)}
               style={styles.picker}
             >
-              <Picker.Item label="Select Category" value="" />
-              <Picker.Item label="Food" value="Food" />
-              <Picker.Item label="Transport" value="Transport" />
-              <Picker.Item label="Shopping" value="Shopping" />
-              <Picker.Item label="Utilities" value="Utilities" />
-              <Picker.Item label="Healthcare" value="Healthcare" />
-              <Picker.Item label="Entertainment" value="Entertainment" />
+        <Picker.Item label="Select Category" value="" />
+        <Picker.Item label="Food" value="Food" />
+        <Picker.Item label="Rent/Mortgage" value="Rent_Mortgage" />
+        <Picker.Item label="Utilities" value="Utilities" />
+        <Picker.Item label="Transport" value="Transport" />
+        <Picker.Item label="Healthcare" value="Healthcare" />
+        <Picker.Item label="Entertainment" value="Entertainment" />
+        <Picker.Item label="Clothing" value="Clothing" />
+        <Picker.Item label="Travel" value="Travel" />
+        <Picker.Item label="Childcare" value="Childcare" />
+        <Picker.Item label="Education" value="Education" />
+        <Picker.Item label="Dining Out" value="Dining_Out" />
+        <Picker.Item label="Subscriptions" value="Subscriptions" />
+        <Picker.Item label="Snacks/Coffee" value="Snacks_Coffee" />
+        <Picker.Item label="Repairs/Maintenance" value="Repairs_Maintenance" />
+        <Picker.Item label="Pet Expenses" value="Pet_Expenses" />
+        <Picker.Item label="Unexpected Expenses" value="Unexpected_Expenses" />
+        <Picker.Item label="Gifts" value="Gifts" />
+        <Picker.Item label="Donations" value="Donations" />
+        <Picker.Item label="Insurance" value="Insurance" />
+        <Picker.Item label="Personal Care" value="Personal_Care" />
+        <Picker.Item label="Hobbies" value="Hobbies" />
+        <Picker.Item label="Cleaning Supplies" value="Cleaning_Supplies" />
+        <Picker.Item label="Home Improvement" value="Home_Improvement" />
+        <Picker.Item label="Miscellaneous" value="Miscellaneous" />
+        <Picker.Item label="Other" value="Other" />
             </Picker>
             {formik.touched.categoryName && formik.errors.categoryName ? (
               <Text style={styles.errorText}>{formik.errors.categoryName}</Text>
