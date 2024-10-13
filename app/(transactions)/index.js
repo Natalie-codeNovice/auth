@@ -581,5 +581,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  loaderContainer: {
+    top:'50%',
+  }
 });
 export default NewTransaction;

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Linking } from 'r
 const Help = () => {
   const handleContactSupport = () => {
     // Replace with your support email or phone number
-    const email = 'support@personalfinancemonitoring.com';
+    const email = 'personalfinancialmonitoringsys@gmail.com';
     Linking.openURL(`mailto:${email}`);
   };
 

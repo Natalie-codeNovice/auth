@@ -74,10 +74,11 @@ const Saving = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [minDate, setMinDate] = useState(new Date()); 
   const [refreshing, setRefreshing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const queryClient = useQueryClient();
   const token = useSelector(state => state.auth.token); 
   const userId = useSelector(state => state.auth.user?.userId);
-  const [loading, setLoading] = useState(false);
+ 
 
   // Query for fetching savings
   const { data = { totalSavings: 0, savings: [] }, isLoading, error, refetch } = useQuery({
@@ -96,10 +97,12 @@ const Saving = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['savings', userId]);
       setModalVisible(false);
+      setIsSubmitting(false); // Enable button after success
     },
     onError: (error) => {
       console.error('Error adding transaction:', error);
       Alert.alert("Error", "An error occurred while adding the saving. Please try again.");
+      setIsSubmitting(false); // Enable button if there's an error
     },
   });
 
@@ -138,11 +141,14 @@ const Saving = () => {
   // Handler for adding a saving
   const handleAddSaving = async (values) => {
     try {
+      setIsSubmitting(true); // Disable button on submit
+
       const netBalanceResponse = await getNetBalance(userId, token);
       const netBalance = netBalanceResponse?.balance || 0;
 
       if (netBalance <= 0) {
         Alert.alert("Netbalance not found!", "Add income first before creating a saving.");
+        setIsSubmitting(false); // Re-enable button if there's no net balance
         return;
       }
 
@@ -150,6 +156,7 @@ const Saving = () => {
 
       if (netBalance < amount) {
         Alert.alert("Error", "Insufficient balance to create a saving.");
+        setIsSubmitting(false); // Re-enable button if insufficient balance
         return;
       }
 
@@ -158,6 +165,7 @@ const Saving = () => {
     } catch (error) {
       console.error('Error adding saving:', error);
       Alert.alert("Error", "An error occurred while adding the saving. Please try again.");
+      setIsSubmitting(false); // Re-enable button if an error occurs
     }
   };
 
@@ -289,32 +297,34 @@ const Saving = () => {
                   {errors.amount && touched.amount ? (
                     <Text style={styles.errorText}>{errors.amount}</Text>
                   ) : null}
-                  <View>
-                    <RNPickerSelect
-                      onValueChange={handleChange('category')}
-                      onBlur={handleBlur('category')}
-                      value={values.category}
-                      items={categoryOptions}
-                      placeholder={{ label: 'Select a category...', value: '' }}
-                      style={pickerSelectStyles}
-                    />
-                    {errors.category && touched.category ? (
-                      <Text style={styles.errorText}>{errors.category}</Text>
-                    ) : null}
-                  </View>
+                  <RNPickerSelect
+                    onValueChange={handleChange('category')}
+                    items={categoryOptions}
+                    placeholder={{ label: 'Select a category', value: null }}
+                    style={pickerSelectStyles}
+                    value={values.category}
+                  />
+                  {errors.category && touched.category ? (
+                    <Text style={styles.errorText}>{errors.category}</Text>
+                  ) : null}
                   <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
-                    <Text style={styles.datePickerText}>Select Date: {date.toDateString()}</Text>
+                    <Text style={styles.datePickerText}>Select Usage Date: {date.toDateString()}</Text>
                   </TouchableOpacity>
                   {showDatePicker && (
                     <DateTimePicker
                       value={date}
                       mode="date"
                       display="default"
-                      onChange={handleDateChange}
                       minimumDate={minDate}
+                      onChange={handleDateChange}
                     />
                   )}
-                  <Button title="Save" onPress={handleSubmit} />
+                  <Button
+                    onPress={handleSubmit}
+                    title="Save"
+                    disabled={isSubmitting} // Disable button while submitting
+                    color={isSubmitting ? 'gray' : '#0066cc'}
+                  />
                 </View>
               )}
             </Formik>
@@ -325,111 +335,122 @@ const Saving = () => {
   );
 };
 
+export default Saving;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    top: "5%"
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   totalSavings: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-  },
-  list: {
-    marginBottom: 60,
+    marginTop: 40,
+
   },
   noData: {
     textAlign: 'center',
     marginTop: 20,
     fontSize: 16,
-    color: '#888',
+    color: 'gray',
+  },
+  list: {
+    paddingBottom: 20,
   },
   item: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    borderBottomColor: '#ccc',
   },
   itemContent: {
-    flex: 1,
+    flexDirection: 'column',
   },
   description: {
     fontSize: 16,
+    marginBottom: 5,
   },
   amount: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    color: 'green',
   },
   useButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 10,
     borderRadius: 5,
   },
   buttonEnabled: {
-    backgroundColor: 'green',
+    backgroundColor: '#0066cc',
   },
   buttonDisabled: {
     backgroundColor: 'gray',
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 14,
   },
   addButton: {
     position: 'absolute',
-    bottom: 60,
+    bottom: 20,
     right: 20,
     backgroundColor: '#0066cc',
     padding: 15,
-    borderRadius: 50,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '80%',
     backgroundColor: '#fff',
-    borderRadius: 10,
+    marginHorizontal: 30,
     padding: 20,
-    alignItems: 'center',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
+    borderRadius: 10,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   input: {
-    width: '100%',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
     marginBottom: 10,
+    paddingVertical: 5,
   },
   errorText: {
     color: 'red',
     fontSize: 12,
+    marginBottom: 10,
   },
   datePickerButton: {
-    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    marginBottom: 10,
   },
   datePickerText: {
     fontSize: 16,
-    color: '#0066cc',
   },
-  isLoading:{
-    top:'50%',
-  }
+  closeButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 10,
+  },
+  isLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
 
 const pickerSelectStyles = StyleSheet.create({
@@ -438,24 +459,21 @@ const pickerSelectStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: 'gray',
     borderRadius: 4,
     color: 'black',
-    paddingRight: 30, // to ensure the text is never behind the icon
+    paddingRight: 30,
+    marginBottom: 10,
   },
   inputAndroid: {
     fontSize: 16,
+    paddingVertical: 12,
     paddingHorizontal: 10,
-    paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: 'gray',
+    borderRadius: 4,
     color: 'black',
-    paddingRight: 30, // to ensure the text is never behind the icon
-  },
-  placeholder: {
-    color: '#999',
+    paddingRight: 30,
+    marginBottom: 10,
   },
 });
-
-export default Saving;
